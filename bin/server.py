@@ -13,11 +13,12 @@ class PutPage(Resource):
 
     def render_POST(self, request):
         # pprint(request.__dict__)
-        new_data = json.loads(request.content.getvalue())
-        for row in new_data:
+        data = {}
+        data['request'] = json.loads(request.content.getvalue())
+        for row in data['request']:
             pprint(row)
             self.db.runQuery("INSERT INTO data (timestamp, payload) VALUES (%s, %s)", (row['timestamp'], row['payload']))
-        return ''
+        return data
 
 class GetPage(Resource):
 
