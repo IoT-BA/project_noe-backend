@@ -6,14 +6,10 @@ from twisted.web.server import Site
 from twisted.enterprise import adbapi
 import json
 
-
-class FormPage(Resource):
+class PutPage(Resource):
 
     def __init__(self):
         self.db = adbapi.ConnectionPool('MySQLdb', user='iot', db='iot', passwd='SmBYWmfaeVyspqfa')
-
-    def render_GET(self, request):
-        return ''
 
     def render_POST(self, request):
         # pprint(request.__dict__)
@@ -23,7 +19,17 @@ class FormPage(Resource):
             self.db.runQuery("INSERT INTO data (timestamp, payload) VALUES (%s, %s)", (row['timestamp'], row['payload']))
         return ''
 
+class GetPage(Resource):
+
+    def __init__(self):
+        self.db = adbapi.ConnectionPool('MySQLdb', user='iot', db='iot', passwd='SmBYWmfaeVyspqfa')
+
+    def render_GET(self, request):
+        #self.db.runQuery("INSERT INTO data (timestamp, payload) VALUES (%s, %s)", (row['timestamp'], row['payload']))
+        return 'hello'
+
 root = Resource()
-root.putChild("form", FormPage())
+root.putChild("put", PutPage())
+root.putChild("api", GetPage())
 application = Application("IoT Backend")
 TCPServer(8888, Site(root)).setServiceParent(application)
