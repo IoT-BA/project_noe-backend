@@ -4,10 +4,12 @@ import sys
 import json
 import pika
 import MySQLdb
+import ConfigParser
 from pprint import pprint
 
 def insert_into_mysql(sql):
-    db = MySQLdb.connect("localhost", "iot", "SmBYWmfaeVyspqfa","iot" )
+    global config
+    db = MySQLdb.connect("localhost", "iot", config.get('mysql','password'),"iot" )
     print sql
     cursor = db.cursor()
     cursor.execute(sql) 
@@ -25,6 +27,9 @@ def callback(ch, method, properties, body):
     except Exception as e:
         print str(e)
         return
+
+config = ConfigParser.RawConfigParser()
+config.read('local.cfg')
 
 mq_host='127.0.0.1'
 
