@@ -7,36 +7,67 @@ import MySQLdb
 import ConfigParser
 from pprint import pprint
 
-def insert_into_mysql(sql):
+def insert_into_mysql(sql, data):
     global config
-    db = MySQLdb.connect("localhost", "iot", config.get('mysql','password'),"iot" )
-    print sql
-    cursor = db.cursor()
-    cursor.execute(sql) 
-    db.commit()
-    db.close()
+    try:
+        print("Connecting to DB")
+        db = MySQLdb.connect(host="localhost", db="iot", passwd=config.get('mysql','password'), user="iot" )
+        print("Creating cursor")
+        c = db.cursor()
+        print("Executing SQL query")
+        c.execute(sql % data) 
+        print("Commiting transaction")
+        db.commit()
+        print("Closing connection to DB")
+        db.close()
+    except Exception as e:
+        print("Closing connection to DB")
+        db.close()
+        raise(e)
 
-def callback(ch, method, properties, body):
+def callback(channel, method, properties, body):
     try:
         d = json.loads(body)
         pprint(d)
-        sql = "INSERT INTO raw_data (gw_serial, payload, rssi, gw_timestamp) VALUES (%s, '%s', %s, '%s')"
+
+        sql = """INSERT INTO raw_data (gw_serial, payload, rssi, gw_timestamp) VALUES (%s, '%s', %s, '%s')"""
+        print sql
         data = ( int(d['gw_serial']), str(d['payload']), int(d['rssi']), str(d['gw_timestamp']) )
-        insert_into_mysql(sql % data) 
-        ch.basic_ack(delivery_tag = method.delivery_tag)
+        print("Prepared raw data to DB") 
+        insert_into_mysql(sql, data) 
+
+        sql = """INSERT INTO parsed_data (serial, _key, value, timestamp) VALUES (%s, '%s', %s, '%s')"""
+        print sql
+        data = ( int(d['parsed']['serial']), int(d['parsed']['key']), float(d['parsed']['value']), str(d['gw_timestamp']) )
+        print("Prepared parsed data to DB") 
+        insert_into_mysql(sql, data) 
+
+        channel.basic_ack(delivery_tag = method.delivery_tag)
     except Exception as e:
+        print("Exception occured!")
         print str(e)
-        return
+        channel.basic_nack(delivery_tag = method.delivery_tag, requeue=False)
 
 config = ConfigParser.RawConfigParser()
 config.read('local.cfg')
-
 mq_host='127.0.0.1'
 
 credentials = pika.PlainCredentials('test', 'myonetest')
-connection = pika.BlockingConnection(pika.ConnectionParameters(host=mq_host, virtual_host="iot", credentials=credentials))
+
+connection = pika.BlockingConnection(
+    pika.ConnectionParameters(
+        host=mq_host,
+        virtual_host="iot",
+        credentials=credentials
+    )
+)
+
 channel = connection.channel()
 channel.basic_qos(prefetch_count=1)
 channel.queue_declare(queue='hello', durable=True)
 channel.basic_consume(callback, queue='hello')
-channel.start_consuming()
+try:
+    channel.start_consuming()
+except KeyboardInterrupt:
+    channel.stop_consuming()
+connection.close()
