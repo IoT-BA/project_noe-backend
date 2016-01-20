@@ -3,44 +3,65 @@
 import sys
 import json
 import pika
+import struct
+from pprint import pprint
 import MySQLdb
 import ConfigParser
 from pprint import pprint
 
 def insert_into_mysql(sql, data):
     global config
+    print(sql)
+    pprint(data)
     try:
         print("Connecting to DB")
         db = MySQLdb.connect(host="localhost", db="iot", passwd=config.get('mysql','password'), user="iot" )
-        print("Creating cursor")
         c = db.cursor()
-        print("Executing SQL query")
         c.execute(sql % data) 
         print("Commiting transaction")
         db.commit()
-        print("Closing connection to DB")
         db.close()
     except Exception as e:
-        print("Closing connection to DB")
         db.close()
         raise(e)
 
 def callback(channel, method, properties, body):
+    data = json.loads(body)
+
+    data['gw_timestamp'] = str(data['gw_timestamp'])
+    data['payload'] = str(data['payload'])
+
+    pl = data['payload'].decode('hex')
+
+    data['parsed'] = {}
+    data['parsed']['serial'] = struct.unpack('H', pl[1:3])[0]
+    data['parsed']['key']    = struct.unpack('H', pl[3:5])[0]
+    data['parsed']['value']  = struct.unpack('f', pl[5:9])[0]
+ 
+    pprint(data)
+
     try:
-        d = json.loads(body)
-        pprint(d)
-
         sql = """INSERT INTO raw_data (gw_serial, payload, rssi, gw_timestamp) VALUES (%s, '%s', %s, '%s')"""
-        print sql
-        data = ( int(d['gw_serial']), str(d['payload']), int(d['rssi']), str(d['gw_timestamp']) )
-        print("Prepared raw data to DB") 
-        insert_into_mysql(sql, data) 
+        sql_data = (
+            data['gw_serial'],
+            data['payload'],
+            data['rssi'],
+            data['gw_timestamp'],
+        )
+        insert_into_mysql(sql, sql_data) 
+        print("OK: raw data inserted into DB") 
+        sal_data = ()
 
-        sql = """INSERT INTO parsed_data (serial, _key, value, timestamp) VALUES (%s, '%s', %s, '%s')"""
-        print sql
-        data = ( int(d['parsed']['serial']), int(d['parsed']['key']), float(d['parsed']['value']), str(d['gw_timestamp']) )
+        sql = """INSERT INTO parsed_data (serial, _key, value, rssi, timestamp) VALUES (%s, %s, %s, %s, '%s')"""
+        sql_data = ( 
+            data['parsed']['serial'], 
+            data['parsed']['key'],
+            data['parsed']['value'],
+            data['rssi'],
+            data['gw_timestamp'],
+        )
         print("Prepared parsed data to DB") 
-        insert_into_mysql(sql, data) 
+        insert_into_mysql(sql, sql_data) 
 
         channel.basic_ack(delivery_tag = method.delivery_tag)
     except Exception as e:
