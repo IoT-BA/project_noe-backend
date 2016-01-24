@@ -16,7 +16,7 @@ class Point(models.Model):
          return str(self.id)
     id = models.IntegerField(primary_key = True)
     key = models.IntegerField(db_column = '_key')
-    node_id = models.ForeignKey(Node, db_column = 'serial')
+    node = models.ForeignKey(Node, db_column = 'serial')
     value = models.IntegerField()
     timestamp = models.DateTimeField()
     class Meta:
