@@ -7,7 +7,7 @@ class Gateway(models.Model):
 
 class Node(models.Model):
     def __unicode__(self):
-         return self.description + "@" + self.responsible
+         return str(self.id) + " - " + self.responsible
     name = models.CharField(max_length=128, default="")
     description = models.CharField(max_length=128)
     responsible = models.CharField(max_length=128)
