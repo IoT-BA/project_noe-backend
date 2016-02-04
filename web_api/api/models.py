@@ -10,7 +10,7 @@ class Gateway(models.Model):
 
 class Key(models.Model):
     def __unicode__(self):
-         return str(self.numeric) + " ~ " + self.key
+         return str(self.numeric) + " ~ " + self.key + " ~ " + self.unit
     numeric = models.IntegerField(primary_key=True)
     key = models.CharField(max_length=256, default="?")
     unit = models.CharField(max_length=256, default="?")

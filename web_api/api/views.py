@@ -1,19 +1,42 @@
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from api.models import Point
-from api.models import Node 
+from api.models import Point, Node, Key
 
 def index(request):
     return HttpResponse("Not much to see here mate!")
 
 @csrf_exempt
-def batch(request, node_id, key):
+def points_this_node(request, node_id):
     if request.method == 'GET':
-        p_list = Point.objects.filter(node_id = node_id, key = key)
+        node = Node.objects.get(id = node_id)
+        p_list = Point.objects.filter(node = node_id).order_by('-timestamp')[:10]
         out = {
             'dataset': [],
-            'node_serial': int(node_id),
-            'key': int(key),
+            'node': {
+                'serial': node.id,
+                'name': node.name,
+                'owner': node.owner.username,
+            }
+        }
+        for p in p_list:
+            out['dataset'].append({
+                'value': p.value,
+                'timestamp': str(p.timestamp),
+                'key_numeric': p.key.numeric,
+                'key_description': p.key.key,
+                'key_unit': p.key.unit,
+            })
+        return JsonResponse(out, safe=False)
+
+def points_this_node_key(request, node_id, key_numeric):
+    if request.method == 'GET':
+        key = Key.objects.get(numeric=key_numeric)
+        node = Node.objects.get(id = node_id)
+        p_list = Point.objects.filter(node = node, key = key).order_by('-timestamp')
+        out = {
+            'dataset': [],
+            'node_serial': node.id,
+            'key': key.numeric,
         }
         for point in p_list:
             out['dataset'].append({
@@ -22,48 +45,19 @@ def batch(request, node_id, key):
             })
         return JsonResponse(out, safe=False)
 
-def last(request, node_id, key):
+def points_all_nodes(request):
     if request.method == 'GET':
-        p = Point.objects.filter(node = node_id, key = key).order_by('-timestamp')[0]
-        out = {
-            'value': p.value,
-            'timestamp': str(p.timestamp),
-            'key': int(key),
-            'node': {
-                'name': p.node.name,
-                'description': p.node.description,
-                'serial': p.node.id,
-            },
-        }
-        return JsonResponse(out, safe=False)
-
-def last_this_node(request, node_id):
-    if request.method == 'GET':
-        p = Point.objects.filter(node = node_id).order_by('-timestamp')[0]
-        out = {
-            'value': p.value,
-            'timestamp': str(p.timestamp),
-            'key': p.key.numeric,
-            'key_human': p.key.key,
-            'node': {
-                'name': p.node.name,
-                'description': p.node.description,
-                'serial': p.node.id,
-                'owner': p.node.owner.username,
-            },
-        }
-        return JsonResponse(out, safe=False)
-
-def last_all_nodes(request):
-    if request.method == 'GET':
-        points = Point.objects.all().order_by('-timestamp')[:30]
+        p_list = Point.objects.all().order_by('-timestamp')[:30]
         out = []
-        for p in points:
+        for p in p_list:
             out.append({
                 'value': p.value,
                 'timestamp': str(p.timestamp),
                 'key': p.key.numeric,
-                'node_serial': p.node_id,
+                'node': {
+                    'serial': p.node.id,
+                    'owner': p.node.owner.username,
+                }
             })
         return JsonResponse(out, safe=False)
 
