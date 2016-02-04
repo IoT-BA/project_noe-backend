@@ -1,6 +1,7 @@
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from api.models import Point
+from api.models import Node 
 
 def index(request):
     return HttpResponse("Not much to see here mate!")
@@ -47,7 +48,7 @@ def last_this_node(request, node_id):
                 'name': p.node.name,
                 'description': p.node.description,
                 'serial': p.node.id,
-                'responsible': p.node.responsible,
+                'owner': p.node.owner.username,
             },
         }
         return JsonResponse(out, safe=False)
@@ -63,4 +64,16 @@ def last_all_nodes(request):
                 'key': p.key,
                 'node_serial': p.node_id,
             })
+        return JsonResponse(out, safe=False)
+
+def node_info(request, node_id):
+    if request.method == 'GET':
+        n = Node.objects.filter(id = node_id)[0]
+        out = {
+            'serial': n.id,
+            'name': n.name,
+            'location': n.location,
+            'description': n.description,
+            'owner': n.owner.username,
+        }
         return JsonResponse(out, safe=False)
