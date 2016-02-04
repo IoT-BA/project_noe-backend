@@ -8,6 +8,13 @@ class Gateway(models.Model):
     owner = models.ForeignKey(User)
     location = models.CharField(max_length=512, default="")
 
+class Key(models.Model):
+    def __unicode__(self):
+         return str(self.numeric) + " ~ " + self.key
+    numeric = models.IntegerField(primary_key=True)
+    key = models.CharField(max_length=256, default="?")
+    unit = models.CharField(max_length=256, default="?")
+
 class Node(models.Model):
     def __unicode__(self):
          return str(self.id) + " - " + self.owner.username
@@ -20,7 +27,7 @@ class Point(models.Model):
     def __unicode__(self):
          return str(self.id)
     id = models.IntegerField(primary_key = True)
-    key = models.IntegerField(db_column = '_key')
+    key = models.ForeignKey(Key, db_column = '_key')
     node = models.ForeignKey(Node, db_column = 'serial')
     value = models.IntegerField()
     rssi = models.IntegerField()

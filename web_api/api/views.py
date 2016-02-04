@@ -28,7 +28,7 @@ def last(request, node_id, key):
         out = {
             'value': p.value,
             'timestamp': str(p.timestamp),
-            'key': p.key,
+            'key': int(key),
             'node': {
                 'name': p.node.name,
                 'description': p.node.description,
@@ -43,7 +43,8 @@ def last_this_node(request, node_id):
         out = {
             'value': p.value,
             'timestamp': str(p.timestamp),
-            'key': p.key,
+            'key': p.key.numeric,
+            'key_human': p.key.key,
             'node': {
                 'name': p.node.name,
                 'description': p.node.description,
@@ -61,7 +62,7 @@ def last_all_nodes(request):
             out.append({
                 'value': p.value,
                 'timestamp': str(p.timestamp),
-                'key': p.key,
+                'key': p.key.numeric,
                 'node_serial': p.node_id,
             })
         return JsonResponse(out, safe=False)
