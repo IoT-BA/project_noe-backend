@@ -36,6 +36,22 @@ def last(request, node_id, key):
         }
         return JsonResponse(out, safe=False)
 
+def last_this_node(request, node_id):
+    if request.method == 'GET':
+        p = Point.objects.filter(node = node_id).order_by('-timestamp')[0]
+        out = {
+            'value': p.value,
+            'timestamp': str(p.timestamp),
+            'key': p.key,
+            'node': {
+                'name': p.node.name,
+                'description': p.node.description,
+                'serial': p.node.id,
+                'responsible': p.node.responsible,
+            },
+        }
+        return JsonResponse(out, safe=False)
+
 def last_all_nodes(request):
     if request.method == 'GET':
         points = Point.objects.all().order_by('-timestamp')[:30]

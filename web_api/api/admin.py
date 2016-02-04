@@ -7,7 +7,7 @@ class PointAdmin(admin.ModelAdmin):
     list_display = ('id', 'timestamp', 'node_id', 'key', 'value')
 
 class NodeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'description')
+    list_display = ('id', 'responsible', 'name', 'description')
 
 admin.site.register(Gateway)
 admin.site.register(Node, NodeAdmin)

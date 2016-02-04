@@ -7,9 +7,10 @@ class Gateway(models.Model):
 
 class Node(models.Model):
     def __unicode__(self):
-         return self.description
+         return self.description + "@" + self.responsible
     name = models.CharField(max_length=128, default="")
     description = models.CharField(max_length=128)
+    responsible = models.CharField(max_length=128)
 
 class Point(models.Model):
     def __unicode__(self):
