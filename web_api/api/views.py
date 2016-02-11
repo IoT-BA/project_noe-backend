@@ -1,6 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from api.models import Point, Node, Key
+from api.models import Rawpoint, Point, Node, Key
 import csv
 
 def index(request):
@@ -94,6 +94,25 @@ def node_info(request, node_id):
             'owner': n.owner.username,
         }
         return JsonResponse(out, safe=False)
+
+def rawpoints(request):
+    if request.method == 'GET':
+        p_list = Rawpoint.objects.all().order_by('-timestamp')[:1000]
+        if request.GET.get('format') == 'csv':
+            response = HttpResponse(content_type='text/plain')
+            writer = csv.writer(response)
+            for p in p_list:
+                writer.writerow([ p.gw.description, p.timestamp, p.payload, p.rssi ])
+            return response
+        else:
+            out = { 'dataset': [] }
+            for p in p_list:
+                out['dataset'].append({
+                    'payload': p.payload,
+                    'timestamp': p.timestamp,
+                    'gw': p.gw.description,
+                })
+            return JsonResponse(out, safe=False)
 
 @csrf_exempt
 def save_point(request):

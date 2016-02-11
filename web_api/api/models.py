@@ -36,4 +36,14 @@ class Point(models.Model):
         managed = False
         db_table = 'parsed_data'
 
-# Create your models here.
+class Rawpoint(models.Model):
+    def __unicode__(self):
+         return str(self.id)
+    id = models.IntegerField(primary_key = True)
+    payload = models.CharField(max_length=128)
+    gw = models.ForeignKey(Gateway, db_column = 'gw_serial')
+    rssi = models.IntegerField()
+    timestamp = models.DateTimeField(db_column = 'gw_timestamp')
+    class Meta:
+        managed = False
+        db_table = 'raw_data'
