@@ -17,7 +17,7 @@ class Key(models.Model):
 
 class Node(models.Model):
     def __unicode__(self):
-         return str(self.id) + " - " + self.owner.username
+         return str(self.id) + " - " + self.owner.first_name + " " + self.owner.last_name
     name = models.CharField(max_length=128, default="")
     location = models.CharField(max_length=512, default="")
     description = models.TextField()
