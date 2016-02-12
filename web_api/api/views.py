@@ -83,6 +83,77 @@ def points_all_nodes(request):
             })
         return JsonResponse(out, safe=False)
 
+def points_all_nodes_key(request, key_numeric):
+    if request.method == 'GET':
+        key = Key.objects.get(numeric=key_numeric)
+        p_list = Point.objects.filter(key = key).order_by('-timestamp')[:1000]
+        out = []
+        for p in p_list:
+            out.append({
+                'value': p.value,
+                'timestamp': str(p.timestamp),
+                'key': p.key.numeric,
+                'node': {
+                    'serial': p.node.id,
+                    'owner': p.node.owner.username,
+                }
+            })
+        return JsonResponse(out, safe=False)
+
+def gecko_funnel_key(request, key_numeric):
+    if request.method == 'GET':
+        key = Key.objects.get(numeric=key_numeric)
+        out = { "item": [] }
+        for node in Node.objects.all():
+            point = Point.objects.filter(node=node, key = key).order_by('-timestamp').first()
+            out['item'].append({
+                'value': point.value,
+                'label': "Node #" + str(point.node.id) + " - " + point.node.owner.first_name + " " + point.node.owner.last_name,
+                }
+            )
+        return JsonResponse(out, safe=False)
+
+def gecko_line_datetime_node_key(request, node_id, key_numeric):
+    if request.method == 'GET':
+        if not request.GET.get('limit'):
+            limit = 1000
+        else:
+            limit = request.GET.get('limit')
+        key = Key.objects.get(numeric=key_numeric)
+        node = Node.objects.get(id = node_id)
+        p_list = Point.objects.filter(node = node, key = key).order_by('-timestamp')[:limit]
+        out = {
+            'x_axis': {
+                'type': 'datetime' 
+            },
+            'series': [{
+                'name': key.key + " for node #" + str(node.id),
+                'data': []
+            }],
+        }
+        for point in p_list:
+            out['series'][0]['data'].append([
+                str(point.timestamp.isoformat()),
+                point.value
+            ])
+        return JsonResponse(out, safe=False)
+
+def gecko_meter_node_key(request, node_id, key_numeric):
+    if request.method == 'GET':
+        key = Key.objects.get(numeric=key_numeric)
+        node = Node.objects.get(id = node_id)
+        point = Point.objects.filter(node = node, key = key).last()
+        out = {
+            'item': point.value,
+            'min': {
+                'value': 629
+            },
+            'max': {
+                'value': 780
+            } 
+        }
+        return JsonResponse(out, safe=False)
+
 def node_info(request, node_id):
     if request.method == 'GET':
         n = Node.objects.filter(id = node_id)[0]
