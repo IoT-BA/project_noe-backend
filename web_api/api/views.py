@@ -116,7 +116,7 @@ def gecko_funnel_key(request, key_numeric):
 def gecko_line_datetime_node_key(request, node_id, key_numeric):
     if request.method == 'GET':
         if not request.GET.get('limit'):
-            limit = 1000
+            limit = 100
         else:
             limit = request.GET.get('limit')
         key = Key.objects.get(numeric=key_numeric)
@@ -149,7 +149,7 @@ def gecko_meter_node_key(request, node_id, key_numeric):
                 'value': 629
             },
             'max': {
-                'value': 780
+                'value': 850
             } 
         }
         return JsonResponse(out, safe=False)
