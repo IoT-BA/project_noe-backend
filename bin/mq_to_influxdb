@@ -6,7 +6,6 @@ import pika
 import pytz
 import struct
 import random
-import MySQLdb
 import ConfigParser
 import dateutil.parser
 from pprint import pprint
@@ -51,25 +50,7 @@ def insert_into_influxdb(data):
     print("Write points: {0}".format(json_body))
     ret = client.write_points(json_body)
     if not ret:
-        raise Exception("Unable to store data in InfluxDB")
-
-def insert_into_mysql(sql, data):
-    global config
-    print(sql)
-    pprint(data)
-    try:
-        print("Connecting to DB")
-        db = MySQLdb.connect(host="localhost", db="iot", passwd=config.get('mysql','password'), user="iot" )
-        db.time_zone = '+00:00'
-        c = db.cursor()
-        c.execute("SET @@TIME_ZONE='+00:00'")
-        c.execute(sql % data) 
-        print("Commiting transaction")
-        db.commit()
-        db.close()
-    except Exception as e:
-        db.close()
-        raise(e)
+        raise Exception("Unable to insert data to InfluxDB")
 
 def callback(channel, method, properties, body):
     data = json.loads(body)
@@ -91,29 +72,8 @@ def callback(channel, method, properties, body):
     pprint(data)
 
     try:
-        sql = """INSERT INTO raw_data (gw_serial, payload, rssi, gw_timestamp) VALUES (%s, '%s', %s, '%s')"""
-        sql_data = (
-            data['gw_serial'],
-            data['payload'],
-            data['rssi'],
-            data['gw_timestamp'],
-        )
-        insert_into_mysql(sql, sql_data) 
-        print("OK: raw data inserted into DB") 
-        sal_data = ()
-
-        sql = """INSERT INTO parsed_data (serial, _key, value, rssi, timestamp) VALUES (%s, %s, %s, %s, '%s')"""
-        sql_data = ( 
-            data['parsed']['serial'], 
-            data['parsed']['key'],
-            data['parsed']['value'],
-            data['rssi'],
-            data['gw_timestamp'],
-        )
         print("Prepared parsed data to DB") 
-        insert_into_mysql(sql, sql_data) 
         insert_into_influxdb(data)
-
         channel.basic_ack(delivery_tag = method.delivery_tag)
 
     except Exception as e:
@@ -137,8 +97,9 @@ connection = pika.BlockingConnection(
 
 channel = connection.channel()
 channel.basic_qos(prefetch_count=1)
-channel.queue_declare(queue='hello', durable=True)
-channel.basic_consume(callback, queue='hello')
+result = channel.queue_declare(queue='for_influxdb', durable=True)
+channel.queue_bind(exchange='iot', queue=result.method.queue)
+channel.basic_consume(callback, queue='for_influxdb')
 try:
     channel.start_consuming()
 except KeyboardInterrupt:
