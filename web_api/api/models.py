@@ -7,6 +7,8 @@ class Gateway(models.Model):
     description = models.CharField(max_length=128)
     owner = models.ForeignKey(User)
     location = models.CharField(max_length=512, default="")
+    gps_lon = models.FloatField(default=0.0)
+    gps_lat = models.FloatField(default=0.0)
 
 class Key(models.Model):
     def __unicode__(self):
@@ -22,6 +24,8 @@ class Node(models.Model):
     location = models.CharField(max_length=512, default="")
     description = models.TextField()
     owner = models.ForeignKey(User)
+    gps_lon = models.FloatField(default=0.0)
+    gps_lat = models.FloatField(default=0.0)
 
 class Point(models.Model):
     def __unicode__(self):
