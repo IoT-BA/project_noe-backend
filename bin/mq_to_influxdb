@@ -37,7 +37,8 @@ def insert_into_influxdb(data):
             "measurement": "point",
             "tags": {
                 "node_serial": str(data['parsed']['serial']),
-                "key": str(data['parsed']['key']) 
+                "key": str(data['parsed']['key']),
+                "value": data['parsed']['value'],
             },
             "time": dateutil.parser.parse(data['gw_timestamp']),
             "fields": {

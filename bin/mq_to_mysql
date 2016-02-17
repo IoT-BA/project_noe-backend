@@ -11,47 +11,6 @@ import ConfigParser
 import dateutil.parser
 from pprint import pprint
 from datetime import datetime
-from influxdb import InfluxDBClient
-
-def insert_into_influxdb(data):
-    host='localhost'
-    port=8086
-    user = 'root'
-    password = 'root'
-    dbname = 'example'
-    dbuser = 'smly'
-    dbuser_password = 'my_secret_password'
-    query = 'select value from cpu_load_short;'
-    client = InfluxDBClient(host, port, user, password, dbname)
-
-    print("Create database: " + dbname)
-    client.create_database(dbname)
-
-    print("Create a retention policy")
-    client.create_retention_policy('awesome_policy', '3d', 3, default=True)
-
-    print("Switch user: " + dbuser)
-    client.switch_user(dbuser, dbuser_password)
-
-    json_body = [
-        {
-            "measurement": "point",
-            "tags": {
-                "node_serial": str(data['parsed']['serial']),
-                "key": str(data['parsed']['key']) 
-            },
-            "time": dateutil.parser.parse(data['gw_timestamp']),
-            "fields": {
-                "value": data['parsed']['value'],
-                "rssi": data['rssi']
-            }
-        }
-    ]
-
-    print("Write points: {0}".format(json_body))
-    ret = client.write_points(json_body)
-    if not ret:
-        raise Exception("Unable to store data in InfluxDB")
 
 def insert_into_mysql(sql, data):
     global config
@@ -112,7 +71,6 @@ def callback(channel, method, properties, body):
         )
         print("Prepared parsed data to DB") 
         insert_into_mysql(sql, sql_data) 
-        insert_into_influxdb(data)
 
         channel.basic_ack(delivery_tag = method.delivery_tag)
 
@@ -137,8 +95,9 @@ connection = pika.BlockingConnection(
 
 channel = connection.channel()
 channel.basic_qos(prefetch_count=1)
-channel.queue_declare(queue='hello', durable=True)
-channel.basic_consume(callback, queue='hello')
+result = channel.queue_declare(queue='for_mysql', durable=True)
+channel.queue_bind(exchange='iot', queue=result.method.queue)
+channel.basic_consume(callback, queue='for_mysql')
 try:
     channel.start_consuming()
 except KeyboardInterrupt:
