@@ -36,7 +36,7 @@ def insert_into_influxdb(data):
         {
             "measurement": "point",
             "tags": {
-                "node_serial": str(data['parsed']['serial']),
+                "node_serial": data['parsed']['serial'],
                 "key": str(data['parsed']['key']),
                 "value": data['parsed']['value'],
             },
@@ -71,6 +71,10 @@ def callback(channel, method, properties, body):
 
     print"DATA:" 
     pprint(data)
+
+    if data['parsed']['serial'] > 100:
+        print("Serial too high - this is not our node!")
+        next 
 
     try:
         print("Prepared parsed data to DB") 

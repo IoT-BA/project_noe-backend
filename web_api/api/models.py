@@ -34,10 +34,10 @@ class Point(models.Model):
     key = models.ForeignKey(Key, db_column = '_key')
     node = models.ForeignKey(Node, db_column = 'serial')
     value = models.IntegerField()
-    rssi = models.IntegerField()
+    rssi = models.IntegerField(null=True)
     timestamp = models.DateTimeField()
+    gw = models.ForeignKey(Gateway, null=True)
     class Meta:
-        managed = False
         db_table = 'parsed_data'
 
 class Rawpoint(models.Model):

@@ -1,6 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from api.models import Rawpoint, Point, Node, Key
+from api.models import Gateway, Rawpoint, Point, Node, Key
 import csv
 
 def index(request):
@@ -66,6 +66,31 @@ def points_this_node_key(request, node_id, key_numeric):
             return response
         else:
             return JsonResponse(out, safe=False)
+
+def gis(request):
+    out = {
+        'gws': [],
+        'nodes': [],
+    }
+    for gw in Gateway.objects.all():
+        out['gws'].append({
+            'description': gw.description,
+            'location': {
+                'gps_lon': gw.gps_lon,
+                'gps_lat': gw.gps_lat,
+                'address': gw.location,
+            }
+        })
+    for node in Node.objects.all():
+        out['nodes'].append({
+            'name': node.description,
+            'location': {
+                'gps_lon': node.gps_lon,
+                'gps_lat': node.gps_lat,
+                'address': node.location,
+            }
+        })
+    return JsonResponse(out)
 
 def points_all_nodes(request):
     if request.method == 'GET':

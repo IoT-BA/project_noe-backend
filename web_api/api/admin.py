@@ -8,7 +8,7 @@ class GatewayAdmin(admin.ModelAdmin):
     list_display = ('id', 'owner', 'location')
 
 class PointAdmin(admin.ModelAdmin):
-    list_display = ('id', 'timestamp', 'node_id', 'key', 'value', 'rssi')
+    list_display = ('id', 'timestamp', 'node_id', 'key', 'value', 'rssi', 'gw')
 
 class KeyAdmin(admin.ModelAdmin):
     list_display = ('numeric', 'key', 'unit')
