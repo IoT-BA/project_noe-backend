@@ -41,10 +41,16 @@ def callback(channel, method, properties, body):
 
     pl = data['payload'].decode('hex')
 
-    data['parsed'] = {}
-    data['parsed']['serial'] = struct.unpack('H', pl[1:3])[0]
-    data['parsed']['key']    = struct.unpack('H', pl[3:5])[0]
-    data['parsed']['value']  = struct.unpack('f', pl[5:9])[0]
+    try:
+        data['parsed'] = {}
+        data['parsed']['serial'] = struct.unpack('H', pl[1:3])[0]
+        data['parsed']['key']    = struct.unpack('H', pl[3:5])[0]
+        data['parsed']['value']  = struct.unpack('f', pl[5:9])[0]
+    except Exception as e:
+        print("Exception occured!")
+        print str(e)
+        channel.basic_nack(delivery_tag = method.delivery_tag, requeue=False)
+        return
 
     print"DATA:" 
     pprint(data)
