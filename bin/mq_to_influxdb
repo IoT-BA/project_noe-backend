@@ -50,18 +50,17 @@ def callback(channel, method, properties, body):
         data['parsed']['key']    = struct.unpack('H', pl[3:5])[0]
         data['parsed']['value']  = struct.unpack('f', pl[5:9])[0]
     except Exception as e:
-        print("Exception occured!")
         print str(e)
         channel.basic_nack(delivery_tag = method.delivery_tag, requeue=False)
+        return
 
     try:
-        print("Prepared parsed data to DB") 
         insert_into_influxdb(data)
         channel.basic_ack(delivery_tag = method.delivery_tag)
     except Exception as e:
-        print("Exception occured!")
         print str(e)
         channel.basic_nack(delivery_tag = method.delivery_tag, requeue=False)
+        return
 
 
 host='localhost'

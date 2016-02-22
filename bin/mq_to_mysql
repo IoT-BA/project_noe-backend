@@ -23,7 +23,6 @@ def insert_into_mysql(sql, data):
         c = db.cursor()
         c.execute("SET @@TIME_ZONE='+00:00'")
         c.execute(sql % data) 
-        print("Commiting transaction")
         db.commit()
         db.close()
     except Exception as e:
@@ -52,9 +51,6 @@ def callback(channel, method, properties, body):
         channel.basic_nack(delivery_tag = method.delivery_tag, requeue=False)
         return
 
-    print"DATA:" 
-    pprint(data)
-
     try:
         sql = """INSERT INTO raw_data (gw_serial, payload, rssi, gw_timestamp) VALUES (%s, '%s', %s, '%s')"""
         sql_data = (
@@ -75,15 +71,13 @@ def callback(channel, method, properties, body):
             data['rssi'],
             data['gw_timestamp'],
         )
-        print("Prepared parsed data to DB") 
         insert_into_mysql(sql, sql_data) 
-
+        print("OK: parsed data inserted into DB") 
         channel.basic_ack(delivery_tag = method.delivery_tag)
-
     except Exception as e:
-        print("Exception occured!")
         print str(e)
         channel.basic_nack(delivery_tag = method.delivery_tag, requeue=False)
+        return
 
 config = ConfigParser.RawConfigParser()
 config.read('local.cfg')
