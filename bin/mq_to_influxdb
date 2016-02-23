@@ -19,14 +19,14 @@ def insert_into_influxdb(data):
         {
             "measurement": "point",
             "tags": {
-                "node_serial": data['parsed']['serial'],
+                "node_serial": str(data['parsed']['serial']),
+                "gw_serial": str(data['gw_serial']),
                 "key": str(data['parsed']['key']),
-                "value": data['parsed']['value'],
             },
             "time": dateutil.parser.parse(data['gw_timestamp']),
             "fields": {
                 "value": data['parsed']['value'],
-                "rssi": data['rssi']
+                "rssi": data['rssi'],
             }
         }
     ]
@@ -37,10 +37,16 @@ def insert_into_influxdb(data):
         raise Exception("Unable to insert data to InfluxDB")
 
 def callback(channel, method, properties, body):
-    data = json.loads(body)
+    try:
+        data = json.loads(body)
+    except Exception as e:
+        print str(e)
+        channel.basic_nack(delivery_tag = method.delivery_tag, requeue=False)
+        return
 
     data['gw_timestamp'] = str(data['gw_timestamp'])
     data['payload'] = str(data['payload'])
+    data['gw_serial'] = int(data['gw_serial'])
 
     pl = data['payload'].decode('hex')
 
@@ -71,9 +77,9 @@ dbname = 'example'
 dbuser = 'smly'
 dbuser_password = 'my_secret_password'
 influxdb_client = InfluxDBClient(host, port, user, password, dbname)
+#influxdb_client.drop_database(dbname)
 print("Create database: " + dbname)
 influxdb_client.create_database(dbname)
-print("Create a retention policy")
 influxdb_client.create_retention_policy('awesome_policy', '3d', 3, default=True)
 print("Switch user: " + dbuser)
 influxdb_client.switch_user(dbuser, dbuser_password)

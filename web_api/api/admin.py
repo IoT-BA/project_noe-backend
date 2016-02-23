@@ -5,7 +5,7 @@ from api.models import Node
 from api.models import Key
 
 class GatewayAdmin(admin.ModelAdmin):
-    list_display = ('id', 'owner', 'location')
+    list_display = ('id', 'description', 'owner', 'location')
 
 class PointAdmin(admin.ModelAdmin):
     list_display = ('id', 'timestamp', 'node_id', 'key', 'value', 'rssi', 'gw')

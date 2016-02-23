@@ -3,12 +3,12 @@ from django.contrib.auth.models import User
 
 class Gateway(models.Model):
     def __unicode__(self):
-         return self.description
+         return str(self.id) + " - " + self.description
     description = models.CharField(max_length=128)
     owner = models.ForeignKey(User)
-    location = models.CharField(max_length=512, default="")
-    gps_lon = models.FloatField(default=0.0)
-    gps_lat = models.FloatField(default=0.0)
+    location = models.CharField(max_length=512, default="", blank=True)
+    gps_lon = models.FloatField(default=0.0, blank=True)
+    gps_lat = models.FloatField(default=0.0, blank=True)
 
 class Key(models.Model):
     def __unicode__(self):
