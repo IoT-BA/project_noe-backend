@@ -37,6 +37,7 @@ def callback(channel, method, properties, body):
 
     data['gw_timestamp'] = str(data['gw_timestamp'])
     data['payload'] = str(data['payload'])
+    data['gw_serial'] = int(data['gw_serial'])
 
     pl = data['payload'].decode('hex')
 
@@ -63,13 +64,14 @@ def callback(channel, method, properties, body):
         print("OK: raw data inserted into DB") 
         sal_data = ()
 
-        sql = """INSERT INTO parsed_data (serial, _key, value, rssi, timestamp) VALUES (%s, %s, %s, %s, '%s')"""
+        sql = """INSERT INTO parsed_data (serial, _key, value, rssi, timestamp, gw_id) VALUES (%s, %s, %s, %s, '%s', %s)"""
         sql_data = ( 
             data['parsed']['serial'], 
             data['parsed']['key'],
             data['parsed']['value'],
             data['rssi'],
             data['gw_timestamp'],
+            data['gw_serial'],
         )
         insert_into_mysql(sql, sql_data) 
         print("OK: parsed data inserted into DB") 
