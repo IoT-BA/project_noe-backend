@@ -9,6 +9,8 @@ class GatewayAdmin(admin.ModelAdmin):
 
 class PointAdmin(admin.ModelAdmin):
     list_display = ('id', 'timestamp', 'node_id', 'key', 'value', 'rssi', 'gw')
+    list_filter = ('gw', 'node_id', 'key') 
+    search_fields = ('gw__description', 'node__name')
 
 class KeyAdmin(admin.ModelAdmin):
     list_display = ('numeric', 'key', 'unit')
