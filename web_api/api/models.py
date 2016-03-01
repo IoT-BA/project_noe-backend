@@ -31,12 +31,13 @@ class Point(models.Model):
     def __unicode__(self):
          return str(self.id)
     id = models.IntegerField(primary_key = True)
-    key = models.ForeignKey(Key, db_column = '_key')
-    node = models.ForeignKey(Node, db_column = 'serial')
+    key = models.ForeignKey(Key, db_column = '_key', db_constraint=False, null=True)
+    node = models.ForeignKey(Node, db_column = 'serial', db_constraint=False, null=True)
     value = models.IntegerField()
     rssi = models.IntegerField(null=True)
     timestamp = models.DateTimeField()
-    gw = models.ForeignKey(Gateway, null=True)
+    gw = models.ForeignKey(Gateway, db_constraint=False, null=True)
+    raw_packet = models.CharField(max_length=256)
     class Meta:
         db_table = 'parsed_data'
 
