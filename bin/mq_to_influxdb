@@ -64,9 +64,8 @@ def callback(channel, method, properties, body):
         insert_into_influxdb(data)
         channel.basic_ack(delivery_tag = method.delivery_tag)
     except Exception as e:
-        print str(e)
-        channel.basic_nack(delivery_tag = method.delivery_tag, requeue=False)
-        return
+        channel.basic_nack(delivery_tag = method.delivery_tag, requeue=True)
+        raise
 
 
 host='localhost'
