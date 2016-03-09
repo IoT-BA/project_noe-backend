@@ -19,13 +19,21 @@ args = parser.parse_args()
 def insert_into_influxdb(data):
     global influxdb_client
 
+
+    if data['parsed']['serial'] > 100:
+        print "This pasket is NOT ours!"
+        lorawan_sk = 0
+    else:
+        lorawan_sk = 1
+
     json_body = [
         {
             "measurement": "point",
             "tags": {
-                "node_serial": str(data['parsed']['serial']),
-                "gw_serial": str(data['gw_serial']),
-                "key": str(data['parsed']['key']),
+                "node_serial": data['parsed']['serial'],
+                "gw_serial": data['gw_serial'],
+                "key": data['parsed']['key'],
+                "lorawan_sk": lorawan_sk,
             },
             "time": dateutil.parser.parse(data['gw_timestamp']),
             "fields": {
@@ -62,7 +70,6 @@ influxdb_client = InfluxDBClient(host, port, user, password, dbname)
 #influxdb_client.drop_database(dbname)
 print("Create database: " + dbname)
 influxdb_client.create_database(dbname)
-#influxdb_client.create_retention_policy('awesome_policy', '3d', 3, default=True)
 print("Switch user: " + dbuser)
 influxdb_client.switch_user(dbuser, dbuser_password)
 
