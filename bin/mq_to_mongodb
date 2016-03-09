@@ -12,6 +12,8 @@ from pprint import pprint
 from datetime import datetime
 from pymongo import MongoClient
 
+import lib.iot.tools as iot
+
 def insert_into_mongodb(data):
     global mongodb_coll
 
@@ -32,28 +34,7 @@ def insert_into_mongodb(data):
         print("Done: " + str(ret.inserted_id))
 
 def callback(channel, method, properties, body):
-    try:
-        data = json.loads(body)
-    except Exception as e:
-        print str(e)
-        channel.basic_nack(delivery_tag = method.delivery_tag, requeue=False)
-        return
-
-    data['gw_timestamp'] = str(data['gw_timestamp'])
-    data['payload'] = str(data['payload'])
-    data['gw_serial'] = int(data['gw_serial'])
-
-    pl = data['payload'].decode('hex')
-
-    try:
-        data['parsed'] = {}
-        data['parsed']['serial'] = struct.unpack('H', pl[1:3])[0]
-        data['parsed']['key']    = struct.unpack('H', pl[3:5])[0]
-        data['parsed']['value']  = struct.unpack('f', pl[5:9])[0]
-    except Exception as e:
-        print str(e)
-        channel.basic_nack(delivery_tag = method.delivery_tag, requeue=False)
-        return
+    data = iot.parse_mq_payload(body)
 
     try:
         insert_into_mongodb(data)
