@@ -26,17 +26,14 @@ def insert_into_mongodb(data):
         "rssi": data['rssi'],
     }
 
-    print("Write points: {0}".format(json_body))
+    # print("Write points: {0}".format(json_body))
     ret = mongodb_coll.insert_one(json_body)
     if not ret.inserted_id:
         raise Exception("Unable to insert data into MongoDB")
-    else:
-        print("Done: " + str(ret.inserted_id))
 
 def callback(channel, method, properties, body):
-    data = iot.parse_mq_payload(body)
-
     try:
+        data = iot.parse_mq_payload(body)
         insert_into_mongodb(data)
         channel.basic_ack(delivery_tag = method.delivery_tag)
     except Exception as e:

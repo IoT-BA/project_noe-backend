@@ -3,6 +3,7 @@
 import sys
 import pika
 import pytz
+import struct
 import argparse
 import ConfigParser
 import dateutil.parser
@@ -50,7 +51,12 @@ def insert_into_influxdb(data):
         raise Exception("Unable to insert data to InfluxDB")
 
 def callback(channel, method, properties, body):
-    data = iot.parse_mq_payload(body)
+    try:
+        data = iot.parse_mq_payload(body)
+    except struct.error as e:
+        channel.basic_nack(delivery_tag = method.delivery_tag, requeue=False)
+        print(str(e))
+        return
 
     try:
         insert_into_influxdb(data)

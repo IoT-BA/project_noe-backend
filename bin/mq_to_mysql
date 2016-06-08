@@ -5,6 +5,7 @@ import MySQLdb
 import argparse
 import ConfigParser
 import dateutil.parser
+import struct
 from pprint import pprint
 from datetime import datetime
 
@@ -33,7 +34,12 @@ def insert_into_mysql(sql, data):
         raise(e)
 
 def callback(channel, method, properties, body):
-    data = iot.parse_mq_payload(body)
+    try:
+        data = iot.parse_mq_payload(body)
+    except struct.error as e:
+        print str(e)
+        channel.basic_nack(delivery_tag = method.delivery_tag, requeue=False)
+        return
 
     try:
         sql = """INSERT INTO raw_data (gw_serial, payload, rssi, gw_timestamp) VALUES (%s, '%s', %s, '%s')"""
