@@ -2,6 +2,7 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from api.models import Gateway, Rawpoint, Point, Node, Key
 import csv
+import json
 
 def index(request):
     return HttpResponse("Not much to see here mate!")
@@ -205,10 +206,11 @@ def rawpoints(request):
             for p in p_list:
                 out['dataset'].append({
                     'payload': p.payload,
-                    'timestamp': p.timestamp,
+                    'timestamp': str(p.timestamp),
                     'gw': p.gw.description,
                 })
-            return JsonResponse(out, safe=False)
+            pretty_json = json.dumps(out, indent=4)
+            return HttpResponse(pretty_json, content_type="application/json")
 
 @csrf_exempt
 def save_point(request):
