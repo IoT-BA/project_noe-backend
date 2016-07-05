@@ -22,7 +22,8 @@ def insert_into_influxdb(data):
 
 
     if data['parsed']['serial'] > 100:
-        print "This pasket is NOT ours!"
+        if args.verbose:
+            print "This pasket is NOT ours!"
         lorawan_sk = 0
     else:
         lorawan_sk = 1
@@ -46,7 +47,10 @@ def insert_into_influxdb(data):
 
     if args.verbose:
         print("Point to insert: {0}".format(json_body))
-    ret = influxdb_client.write_points(json_body)
+    try:
+        ret = influxdb_client.write_points(json_body)
+    except Exception as e:
+        raise Exception("Unable to insert data to InfluxDB")
     if not ret:
         raise Exception("Unable to insert data to InfluxDB")
 
@@ -63,7 +67,6 @@ def callback(channel, method, properties, body):
         channel.basic_ack(delivery_tag = method.delivery_tag)
     except Exception as e:
         channel.basic_nack(delivery_tag = method.delivery_tag, requeue=True)
-        raise
 
 host='localhost'
 port=8086

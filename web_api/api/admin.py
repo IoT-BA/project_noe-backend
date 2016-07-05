@@ -6,7 +6,7 @@ from api.models import Key
 from api.models import Rawpoint
 
 class GatewayAdmin(admin.ModelAdmin):
-    list_display = ('id', 'description', 'owner', 'location')
+    list_display = ('id', 'description', 'owner', 'serial', 'location')
 
 class RawpointAdmin(admin.ModelAdmin):
     list_display = ('id', 'timestamp', 'payload', 'rssi', 'gw')

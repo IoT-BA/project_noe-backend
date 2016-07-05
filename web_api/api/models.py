@@ -9,6 +9,7 @@ class Gateway(models.Model):
     location = models.CharField(max_length=512, default="", blank=True)
     gps_lon = models.FloatField(default=0.0, blank=True)
     gps_lat = models.FloatField(default=0.0, blank=True)
+    serial = models.CharField(max_length=128, default="", blank=True)
 
 class Key(models.Model):
     def __unicode__(self):

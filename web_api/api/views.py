@@ -126,60 +126,6 @@ def points_all_nodes_key(request, key_numeric):
             })
         return JsonResponse(out, safe=False)
 
-def gecko_funnel_key(request, key_numeric):
-    if request.method == 'GET':
-        key = Key.objects.get(numeric=key_numeric)
-        out = { "item": [] }
-        for node in Node.objects.all():
-            point = Point.objects.filter(node=node, key = key).order_by('-timestamp').first()
-            out['item'].append({
-                'value': point.value,
-                'label': "Node #" + str(point.node.id) + " - " + point.node.owner.first_name + " " + point.node.owner.last_name,
-                }
-            )
-        return JsonResponse(out, safe=False)
-
-def gecko_line_datetime_node_key(request, node_id, key_numeric):
-    if request.method == 'GET':
-        if not request.GET.get('limit'):
-            limit = 100
-        else:
-            limit = request.GET.get('limit')
-        key = Key.objects.get(numeric=key_numeric)
-        node = Node.objects.get(id = node_id)
-        p_list = Point.objects.filter(node = node, key = key).order_by('-timestamp')[:limit]
-        out = {
-            'x_axis': {
-                'type': 'datetime' 
-            },
-            'series': [{
-                'name': key.key + " for node #" + str(node.id),
-                'data': []
-            }],
-        }
-        for point in p_list:
-            out['series'][0]['data'].append([
-                str(point.timestamp.isoformat()),
-                point.value
-            ])
-        return JsonResponse(out, safe=False)
-
-def gecko_meter_node_key(request, node_id, key_numeric):
-    if request.method == 'GET':
-        key = Key.objects.get(numeric=key_numeric)
-        node = Node.objects.get(id = node_id)
-        point = Point.objects.filter(node = node, key = key).last()
-        out = {
-            'item': point.value,
-            'min': {
-                'value': 629
-            },
-            'max': {
-                'value': 850
-            } 
-        }
-        return JsonResponse(out, safe=False)
-
 def node_info(request, node_id):
     if request.method == 'GET':
         n = Node.objects.filter(id = node_id)[0]
@@ -214,8 +160,19 @@ def rawpoints(request):
 
 @csrf_exempt
 def save_point(request):
+    from datetime import datetime 
+    import pytz
+
+    out = []
+
     if request.method == 'POST':
-        out = {
-            'request': request.body,
-        }
+        data = json.loads(request.body)
+        for d in data:
+            point = Rawpoint()
+            point.payload = d['payload']
+            point.gw = Gateway.objects.get(serial=d['gateway_serial']) 
+            point.rssi = d['rssi'] 
+            point.timestamp = datetime.utcfromtimestamp(d['timestamp']).replace(tzinfo=pytz.utc) 
+            point.save()
+            out.append({ 'rowid': d['rowid'], 'status': 1 })
         return JsonResponse(out, safe=False)
