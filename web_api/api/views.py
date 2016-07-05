@@ -151,9 +151,8 @@ def rawpoints(request):
             out = { 'dataset': [] }
             for p in p_list:
                 out['dataset'].append({
-                    'payload': p.payload,
-                    'timestamp': str(p.timestamp),
-                    'gw': p.gw.description,
+                                       'payload': p.payload,
+                                       'timestamp': str(p.timestamp),
                 })
             pretty_json = json.dumps(out, indent=4)
             return HttpResponse(pretty_json, content_type="application/json")
@@ -162,17 +161,22 @@ def rawpoints(request):
 def save_point(request):
     from datetime import datetime 
     import pytz
+    from pprint import pprint
 
     out = []
 
     if request.method == 'POST':
         data = json.loads(request.body)
         for d in data:
-            point = Rawpoint()
-            point.payload = d['payload']
-            point.gw = Gateway.objects.get(serial=d['gateway_serial']) 
-            point.rssi = d['rssi'] 
-            point.timestamp = datetime.utcfromtimestamp(d['timestamp']).replace(tzinfo=pytz.utc) 
-            point.save()
-            out.append({ 'rowid': d['rowid'], 'status': 1 })
+            try: 
+                point = Rawpoint()
+                point.payload = d['payload']
+                point.gw = Gateway.objects.get(serial = d['gateway_serial']) 
+                point.node = Node.objects.get(node_id = d['node_id']) 
+                point.rssi = d['rssi'] 
+                point.timestamp = datetime.utcfromtimestamp(d['timestamp']).replace(tzinfo=pytz.utc) 
+                point.save()
+                out.append({ 'rowid': d['rowid'], 'status': 1 })
+            except Exception as e:
+                out.append({ 'rowid': d['rowid'], 'status': 2 })
         return JsonResponse(out, safe=False)

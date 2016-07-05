@@ -21,6 +21,8 @@ class Key(models.Model):
 class Node(models.Model):
     def __unicode__(self):
          return str(self.id) + " - " + self.owner.first_name + " " + self.owner.last_name
+    id = models.IntegerField(primary_key = True)
+    node_id = models.IntegerField(null=True)
     name = models.CharField(max_length=128, default="")
     location = models.CharField(max_length=512, default="")
     description = models.TextField()
@@ -50,6 +52,6 @@ class Rawpoint(models.Model):
     gw = models.ForeignKey(Gateway, db_column = 'gw_serial')
     rssi = models.IntegerField()
     timestamp = models.DateTimeField(db_column = 'gw_timestamp')
+    node = models.ForeignKey(Node)
     class Meta:
-        managed = False
         db_table = 'raw_data'
