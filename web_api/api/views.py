@@ -166,17 +166,26 @@ def save_point(request):
     out = []
 
     if request.method == 'POST':
+        pprint(request.body)
         data = json.loads(request.body)
         for d in data:
             try: 
                 point = Rawpoint()
                 point.payload = d['payload']
-                point.gw = Gateway.objects.get(serial = d['gateway_serial']) 
+                #point.gw = Gateway.objects.get(serial = d['gateway_serial']) 
                 point.node = Node.objects.get(node_id = d['node_id']) 
                 point.rssi = d['rssi'] 
+                try:
+                    d['snr']
+                    point.snr = d['snr'] 
+                except Exception as e:
+                    point.snr = None 
                 point.timestamp = datetime.utcfromtimestamp(d['timestamp']).replace(tzinfo=pytz.utc) 
                 point.save()
                 out.append({ 'rowid': d['rowid'], 'status': 1 })
             except Exception as e:
-                out.append({ 'rowid': d['rowid'], 'status': 2 })
+                out.append({ 'rowid': d['rowid'],
+                             'status': 2,
+                             'status_explain': str(e)
+                          })
         return JsonResponse(out, safe=False)
