@@ -68,30 +68,49 @@ def points_this_node_key(request, node_id, key_numeric):
         else:
             return JsonResponse(out, safe=False)
 
+@csrf_exempt
 def gis(request):
+    ''' Output in GeoJSON format '''
+
     out = {
-        'gws': [],
-        'nodes': [],
+        'type': 'FeatureCollection',
+        'features': []
     }
     for gw in Gateway.objects.all():
-        out['gws'].append({
-            'description': gw.description,
-            'location': {
+        out['features'].append({
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [ gw.gps_lat, gw.gps_lon ],
+            },
+            'properties': {
+                'name': gw.description,
+                'address': gw.location,
                 'gps_lon': gw.gps_lon,
                 'gps_lat': gw.gps_lat,
-                'address': gw.location,
+                'type': 'gateway'
             }
         })
     for node in Node.objects.all():
-        out['nodes'].append({
-            'name': node.description,
-            'location': {
-                'gps_lon': node.gps_lon,
-                'gps_lat': node.gps_lat,
+        out['features'].append({
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [ node.gps_lat, node.gps_lon ],
+            },
+            'properties': {
+                'name': node.description,
                 'address': node.location,
+                'node_id': node.node_id,
+                'type': 'node',
+                'gps_lon': node.gps_lon,
+                'gps_lat': node.gps_lat
             }
         })
-    return JsonResponse(out)
+    pretty_json = json.dumps(out, indent=4)
+    response = HttpResponse(pretty_json, content_type="application/json")
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
 
 def points_all_nodes(request):
     if request.method == 'GET':
