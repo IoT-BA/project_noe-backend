@@ -1,6 +1,7 @@
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from api.models import Gateway, Rawpoint, Point, Node, Key
+from datetime import datetime
 import csv
 import json
 import time
@@ -36,7 +37,8 @@ def points_this_node(request, node_id):
                 writer.writerow([ p.timestamp, p.key.numeric, p.value ])
             return response
         else:
-            return JsonResponse(out, safe=False)
+            pretty_json = json.dumps(out, indent=4)
+            return HttpResponse(pretty_json, content_type="application/json")
 
 def rawpoints_this_node(request, node_id):
     if request.method == 'GET':
@@ -57,7 +59,8 @@ def rawpoints_this_node(request, node_id):
         for p in p_list:
             out['dataset'].append({
                 'payload': p.payload,
-                'timestamp': str(p.timestamp),
+                'datetime': str(p.timestamp),
+                'timestamp': (p.timestamp.replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds(),
             })
         if request.GET.get('format') == 'csv':
             response = HttpResponse(content_type='text/plain')
