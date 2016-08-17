@@ -3,6 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from api.models import Gateway, Rawpoint, Point, Node, Key
 import csv
 import json
+import time
 
 def index(request):
     return HttpResponse("Not much to see here mate!")
@@ -10,7 +11,7 @@ def index(request):
 @csrf_exempt
 def points_this_node(request, node_id):
     if request.method == 'GET':
-        node = Node.objects.get(id = node_id)
+        node = Node.objects.get(node_id = node_id)
         p_list = Point.objects.filter(node = node_id).order_by('-timestamp')[:100]
         out = {
             'dataset': [],
@@ -36,6 +37,37 @@ def points_this_node(request, node_id):
             return response
         else:
             return JsonResponse(out, safe=False)
+
+def rawpoints_this_node(request, node_id):
+    if request.method == 'GET':
+        node = Node.objects.get(node_id = node_id)
+        p_list = Rawpoint.objects.filter(node = node).order_by('-timestamp')[:1000]
+        out = {
+            'dataset': [],
+            'node': {
+                'backend_id': node.id,
+                'node_id':    node.node_id,
+                'name':       node.name,
+                'owner':      node.owner.username,
+            },
+            'info': {
+                'api_request_timestamp': str(time.time())
+            },
+        }
+        for p in p_list:
+            out['dataset'].append({
+                'payload': p.payload,
+                'timestamp': str(p.timestamp),
+            })
+        if request.GET.get('format') == 'csv':
+            response = HttpResponse(content_type='text/plain')
+            writer = csv.writer(response)
+            for p in p_list:
+                writer.writerow([ p.timestamp, p.key.numeric, p.value ])
+            return response
+        else:
+            pretty_json = json.dumps(out, indent=4)
+            return HttpResponse(pretty_json, content_type="application/json")
 
 def points_this_node_key(request, node_id, key_numeric):
     if request.method == 'GET':
@@ -147,7 +179,7 @@ def points_all_nodes_key(request, key_numeric):
 
 def node_info(request, node_id):
     if request.method == 'GET':
-        n = Node.objects.filter(id = node_id)[0]
+        n = Node.objects.filter(node_id = node_id)[0]
         out = {
             'serial': n.id,
             'name': n.name,
