@@ -9,7 +9,7 @@ class GatewayAdmin(admin.ModelAdmin):
     list_display = ('id', 'description', 'owner', 'serial', 'location')
 
 class RawpointAdmin(admin.ModelAdmin):
-    list_display = ('id', 'timestamp', 'payload', 'rssi', 'snr', 'node_id', 'gw')
+    list_display = ('id', 'timestamp', 'payload', 'rssi', 'snr', 'node_id', 'gw', 'gateway_serial')
     list_filter = ('node_id', 'gw')
 
 class PointAdmin(admin.ModelAdmin):

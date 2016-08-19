@@ -20,7 +20,7 @@ class Key(models.Model):
 
 class Node(models.Model):
     def __unicode__(self):
-         return str(self.id) + " - " + self.owner.first_name + " " + self.owner.last_name
+         return str(self.node_id) + " - " + self.owner.first_name + " " + self.owner.last_name
     id = models.AutoField(primary_key = True)
     node_id = models.CharField(max_length=256, null=True)
     name = models.CharField(max_length=128, default="")
@@ -49,6 +49,7 @@ class Rawpoint(models.Model):
          return str(self.id)
     id = models.IntegerField(primary_key = True)
     payload = models.CharField(max_length=128)
+    gateway_serial = models.CharField(max_length=128, null=True)
     gw = models.ForeignKey(Gateway, db_column = 'gw_serial', null=True)
     rssi = models.IntegerField(null=True, blank=True)
     snr = models.IntegerField(null=True, blank=True)

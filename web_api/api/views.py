@@ -227,6 +227,10 @@ def save_point(request):
                 point = Rawpoint()
                 point.payload = d['payload']
                 #point.gw = Gateway.objects.get(serial = d['gateway_serial']) 
+                try:
+                    point.gateway_serial = d['gateway_serial']
+                except Exception as e:
+                    pass
                 point.node = Node.objects.get(node_id = d['node_id']) 
                 point.rssi = d['rssi'] 
                 try:
