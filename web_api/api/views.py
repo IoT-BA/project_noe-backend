@@ -253,7 +253,7 @@ def save_point(request):
                     point.snr = d['snr'] 
                 except Exception as e:
                     point.snr = None 
-                point.timestamp = datetime.utcfromtimestamp(d['timestamp']).replace(tzinfo=pytz.utc) 
+                point.timestamp = datetime.fromtimestamp(d['timestamp'], pytz.utc)
                 point.save()
                 out.append({ 'rowid': d['rowid'], 'status': 1 })
             except Exception as e:
