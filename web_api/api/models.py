@@ -23,26 +23,13 @@ class Node(models.Model):
          return str(self.node_id) + " - " + self.owner.first_name + " " + self.owner.last_name
     id = models.AutoField(primary_key = True)
     node_id = models.CharField(max_length=256, null=True)
+    api_key = models.CharField(max_length=256, null=True)
     name = models.CharField(max_length=128, default="")
     location = models.CharField(max_length=512, default="")
     description = models.TextField()
     owner = models.ForeignKey(User)
     gps_lon = models.FloatField(default=0.0)
     gps_lat = models.FloatField(default=0.0)
-
-class Point(models.Model):
-    def __unicode__(self):
-         return str(self.id)
-    id = models.IntegerField(primary_key = True)
-    key = models.ForeignKey(Key, db_column = '_key', db_constraint=False)
-    node = models.ForeignKey(Node, db_column = 'serial', db_constraint=False)
-    value = models.IntegerField()
-    rssi = models.IntegerField(null=True)
-    timestamp = models.DateTimeField()
-    gw = models.ForeignKey(Gateway, db_constraint=False, null=True)
-    raw_packet = models.CharField(max_length=256)
-    class Meta:
-        db_table = 'parsed_data'
 
 class Rawpoint(models.Model):
     def __unicode__(self):
@@ -57,3 +44,19 @@ class Rawpoint(models.Model):
     node = models.ForeignKey(Node)
     class Meta:
         db_table = 'raw_data'
+
+class Point(models.Model):
+    def __unicode__(self):
+         return str(self.id)
+    id = models.IntegerField(primary_key = True)
+    key = models.ForeignKey(Key, db_column = '_key', db_constraint=False)
+    node = models.ForeignKey(Node, db_column = 'serial', db_constraint=False)
+    value = models.IntegerField()
+    rssi = models.IntegerField(null=True)
+    timestamp = models.DateTimeField()
+    gw = models.ForeignKey(Gateway, db_constraint=False, null=True)
+    rawpoint = models.ForeignKey(Rawpoint, db_constraint=False, null=True)
+    raw_packet = models.CharField(max_length=256)
+    class Meta:
+        db_table = 'parsed_data'
+

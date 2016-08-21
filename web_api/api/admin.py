@@ -10,7 +10,7 @@ class GatewayAdmin(admin.ModelAdmin):
 
 class RawpointAdmin(admin.ModelAdmin):
     list_display = ('id', 'timestamp', 'payload', 'rssi', 'snr', 'node_id', 'gw', 'gateway_serial')
-    list_filter = ('node_id', 'gw')
+    list_filter = ('node_id', 'gw', 'gateway_serial')
 
 class PointAdmin(admin.ModelAdmin):
     list_display = ('id', 'timestamp', 'node_id', 'key', 'value', 'rssi', 'gw')
@@ -21,7 +21,7 @@ class KeyAdmin(admin.ModelAdmin):
     list_display = ('numeric', 'key', 'unit')
 
 class NodeAdmin(admin.ModelAdmin):
-    list_display = ('node_id', 'owner', 'name', 'description')
+    list_display = ('node_id', 'owner', 'name', 'description', 'api_key')
 
 admin.site.register(Gateway, GatewayAdmin)
 admin.site.register(Node, NodeAdmin)

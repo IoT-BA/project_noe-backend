@@ -10,10 +10,10 @@ def index(request):
     return HttpResponse("Not much to see here mate!")
 
 @csrf_exempt
-def points_this_node(request, node_id):
+def points_this_node(request, node_api_key):
     if request.method == 'GET':
-        node = Node.objects.get(node_id = node_id)
-        p_list = Point.objects.filter(node = node_id).order_by('-timestamp')[:100]
+        node = Node.objects.get(api_key = node_api_key)
+        p_list = Point.objects.filter(node = node).order_by('-timestamp')[:200]
         out = {
             'dataset': [],
             'node': {
@@ -23,27 +23,39 @@ def points_this_node(request, node_id):
             }
         }
         for p in p_list:
-            out['dataset'].append({
-                'value': p.value,
-                'timestamp': str(p.timestamp),
-                'key_numeric': p.key.numeric,
-                'key_description': p.key.key,
-                'key_unit': p.key.unit,
-            })
+            try:
+                out['dataset'].append({
+                    'value': p.value,
+                    'timestamp': str(p.timestamp),
+                    'key_numeric': p.key.numeric,
+                    'key_description': p.key.key,
+                    'key_unit': p.key.unit,
+                })
+            except Exception as e:
+                # probably no such key
+                continue
         if request.GET.get('format') == 'csv':
             response = HttpResponse(content_type='text/plain')
             writer = csv.writer(response)
             for p in p_list:
-                writer.writerow([ p.timestamp, p.key.numeric, p.value ])
+                try:
+                    writer.writerow([ p.timestamp, p.key.numeric, p.value ])
+                except Exception as e:
+                    # probably no such key
+                    continue
             return response
         else:
             pretty_json = json.dumps(out, indent=4)
             return HttpResponse(pretty_json, content_type="application/json")
 
-def rawpoints_this_node(request, node_id):
+def rawpoints_this_node(request, node_api_key):
     if request.method == 'GET':
-        node = Node.objects.get(node_id = node_id)
-        p_list = Rawpoint.objects.filter(node = node).order_by('-timestamp')[:1000]
+        if not request.GET.get('limit'):
+            limit = 200
+        else:
+            limit = request.GET.get('limit')
+        node = Node.objects.get(api_key = node_api_key)
+        p_list = Rawpoint.objects.filter(node = node).order_by('-timestamp')[:limit]
         out = {
             'dataset': [],
             'node': {
@@ -53,7 +65,9 @@ def rawpoints_this_node(request, node_id):
                 'owner':      node.owner.username,
             },
             'info': {
-                'api_request_timestamp': str(time.time())
+                'api_request_timestamp': str(time.time()),
+                'dataset_size_limit': limit,
+                'dataset_size': len(p_list),
             },
         }
         for p in p_list:
@@ -72,14 +86,14 @@ def rawpoints_this_node(request, node_id):
             pretty_json = json.dumps(out, indent=4)
             return HttpResponse(pretty_json, content_type="application/json")
 
-def points_this_node_key(request, node_id, key_numeric):
+def points_this_node_key(request, node_api_key, key_numeric):
     if request.method == 'GET':
         if not request.GET.get('limit'):
             limit = 1000
         else:
             limit = request.GET.get('limit')
         key = Key.objects.get(numeric=key_numeric)
-        node = Node.objects.get(id = node_id)
+        node = Node.objects.get(api_key = node_api_key)
         p_list = Point.objects.filter(node = node, key = key).order_by('-timestamp')[:limit]
         out = {
             'dataset': [],
@@ -194,7 +208,8 @@ def node_info(request, node_id):
 
 def rawpoints(request):
     if request.method == 'GET':
-        p_list = Rawpoint.objects.all().order_by('-timestamp')[:1000]
+        limit = 200
+        p_list = Rawpoint.objects.all().order_by('-timestamp')[:limit]
         if request.GET.get('format') == 'csv':
             response = HttpResponse(content_type='text/plain')
             writer = csv.writer(response)
