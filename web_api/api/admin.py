@@ -2,6 +2,7 @@ from django.contrib import admin
 from api.models import Gateway
 from api.models import Point 
 from api.models import Node 
+from api.models import NodeType
 from api.models import Key
 from api.models import Rawpoint
 
@@ -21,10 +22,11 @@ class KeyAdmin(admin.ModelAdmin):
     list_display = ('numeric', 'key', 'unit')
 
 class NodeAdmin(admin.ModelAdmin):
-    list_display = ('node_id', 'owner', 'name', 'description', 'api_key')
+    list_display = ('node_id', 'owner', 'name', 'description', 'api_key', 'nodetype')
 
 admin.site.register(Gateway, GatewayAdmin)
 admin.site.register(Node, NodeAdmin)
+admin.site.register(NodeType)
 admin.site.register(Key, KeyAdmin)
 admin.site.register(Point, PointAdmin)
 admin.site.register(Rawpoint, RawpointAdmin)

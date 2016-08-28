@@ -18,6 +18,11 @@ class Key(models.Model):
     key = models.CharField(max_length=256, default="?")
     unit = models.CharField(max_length=256, default="?")
 
+class NodeType(models.Model):
+    def __unicode__(self):
+         return self.name
+    name = models.CharField(max_length=128, default="")
+
 class Node(models.Model):
     def __unicode__(self):
          return str(self.node_id) + " - " + self.owner.first_name + " " + self.owner.last_name
@@ -28,6 +33,7 @@ class Node(models.Model):
     location = models.CharField(max_length=512, default="")
     description = models.TextField()
     owner = models.ForeignKey(User)
+    nodetype = models.ForeignKey(NodeType, null=True)
     gps_lon = models.FloatField(default=0.0)
     gps_lat = models.FloatField(default=0.0)
 
