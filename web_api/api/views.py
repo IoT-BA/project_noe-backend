@@ -117,6 +117,22 @@ def points_this_node_key(request, node_api_key, key_numeric):
         else:
             return JsonResponse(out, safe=False)
 
+def nodes(request):
+    ''' List of all Nodes '''
+
+    out = { 'nodes': [] }
+
+    for node in Node.objects.all():
+        out['nodes'].append({
+            'name': node.description,
+            'api_key': node.api_key,
+        })
+
+    pretty_json = json.dumps(out, indent=4)
+    response = HttpResponse(pretty_json, content_type="application/json")
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
 @csrf_exempt
 def gis(request):
     ''' Output in GeoJSON format '''
