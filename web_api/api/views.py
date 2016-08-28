@@ -210,17 +210,22 @@ def points_all_nodes_key(request, key_numeric):
             })
         return JsonResponse(out, safe=False)
 
-def node_info(request, node_id):
+def node_info(request, node_api_key):
     if request.method == 'GET':
-        n = Node.objects.filter(node_id = node_id)[0]
+        n = Node.objects.get(api_key = node_api_key)
         out = {
             'serial': n.id,
             'name': n.name,
             'location': n.location,
             'description': n.description,
             'owner': n.owner.username,
+            'api_key': n.api_key,
         }
-        return JsonResponse(out, safe=False)
+
+    pretty_json = json.dumps(out, indent=4)
+    response = HttpResponse(pretty_json, content_type="application/json")
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
 
 def rawpoints(request):
     if request.method == 'GET':
