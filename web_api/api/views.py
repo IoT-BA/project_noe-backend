@@ -5,6 +5,7 @@ from datetime import datetime
 import csv
 import json
 import time
+import pytz
 
 def index(request):
     return HttpResponse("Not much to see here mate!")
@@ -215,12 +216,16 @@ def node_info(request, node_api_key):
         n = Node.objects.get(api_key = node_api_key)
         out = {
             'serial': n.id,
+            'node_id': n.node_id,
             'name': n.name,
             'location': n.location,
             'description': n.description,
             'owner': n.owner.username,
             'api_key': n.api_key,
             'type': n.nodetype.name,
+            'gps_lon': n.gps_lon,
+            'gps_lat': n.gps_lat,
+            'last_rawpoint': str(n.last_rawpoint),
         }
 
     pretty_json = json.dumps(out, indent=4)
@@ -251,7 +256,6 @@ def rawpoints(request):
 @csrf_exempt
 def save_point(request):
     from datetime import datetime 
-    import pytz
     from pprint import pprint
 
     out = []
@@ -268,7 +272,12 @@ def save_point(request):
                     point.gateway_serial = d['gateway_serial']
                 except Exception as e:
                     pass
-                point.node = Node.objects.get(node_id = d['node_id']) 
+
+                node = Node.objects.get(node_id = d['node_id'])
+                node.last_rawpoint = datetime.now()
+                node.save()
+
+                point.node = node
                 point.rssi = d['rssi'] 
                 try:
                     d['snr']

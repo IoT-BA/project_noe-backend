@@ -36,6 +36,7 @@ class Node(models.Model):
     nodetype = models.ForeignKey(NodeType, null=True)
     gps_lon = models.FloatField(default=0.0)
     gps_lat = models.FloatField(default=0.0)
+    last_rawpoint = models.DateTimeField(null=True, blank=True)
 
 class Rawpoint(models.Model):
     def __unicode__(self):
