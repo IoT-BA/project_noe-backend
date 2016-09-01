@@ -44,11 +44,12 @@ class Rawpoint(models.Model):
     id = models.IntegerField(primary_key = True)
     payload = models.CharField(max_length=128)
     gateway_serial = models.CharField(max_length=128, null=True)
-    gw = models.ForeignKey(Gateway, db_column = 'gw_serial', null=True)
+    gw = models.ForeignKey(Gateway, db_column = 'gw_serial', null=True, blank=True)
     rssi = models.IntegerField(null=True, blank=True)
     snr = models.IntegerField(null=True, blank=True)
     timestamp = models.DateTimeField(db_column = 'gw_timestamp')
     node = models.ForeignKey(Node)
+    state = models.IntegerField(choices=((0, 'new'), (1, 'processed'), (2, 'failed to process')), default=0)
     class Meta:
         db_table = 'raw_data'
 

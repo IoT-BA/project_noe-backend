@@ -257,6 +257,7 @@ def rawpoints(request):
 def save_point(request):
     from datetime import datetime 
     from pprint import pprint
+    from django.utils import timezone
 
     out = []
 
@@ -274,7 +275,7 @@ def save_point(request):
                     pass
 
                 node = Node.objects.get(node_id = d['node_id'])
-                node.last_rawpoint = datetime.now()
+                node.last_rawpoint = timezone.now()
                 node.save()
 
                 point.node = node
