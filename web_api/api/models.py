@@ -25,7 +25,7 @@ class NodeType(models.Model):
 
 class Node(models.Model):
     def __unicode__(self):
-         return str(self.node_id) + " - " + self.owner.first_name + " " + self.owner.last_name
+         return str(self.node_id) + " - " + str(self.api_key)
     id = models.AutoField(primary_key = True)
     node_id = models.CharField(max_length=256, null=True)
     api_key = models.CharField(max_length=256, null=True)
@@ -57,14 +57,14 @@ class Point(models.Model):
     def __unicode__(self):
          return str(self.id)
     id = models.IntegerField(primary_key = True)
-    key = models.ForeignKey(Key, db_column = '_key', db_constraint=False)
-    node = models.ForeignKey(Node, db_column = 'serial', db_constraint=False)
+    key = models.ForeignKey(Key, db_column = '_key', db_constraint=False, null=True, blank=True)
+    node = models.ForeignKey(Node, db_column = 'serial', db_constraint=False, null=True, blank=True)
     value = models.IntegerField()
-    rssi = models.IntegerField(null=True)
+    rssi = models.IntegerField(null=True, blank=True)
     timestamp = models.DateTimeField()
-    gw = models.ForeignKey(Gateway, db_constraint=False, null=True)
-    rawpoint = models.ForeignKey(Rawpoint, db_constraint=False, null=True)
-    raw_packet = models.CharField(max_length=256)
+    gw = models.ForeignKey(Gateway, db_constraint=False, null=True, blank=True)
+    rawpoint = models.ForeignKey(Rawpoint, db_constraint=False, null=True, blank=True)
+    raw_packet = models.CharField(max_length=256, null=True, blank=True)
     class Meta:
         db_table = 'parsed_data'
 

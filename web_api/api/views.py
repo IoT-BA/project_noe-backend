@@ -64,6 +64,7 @@ def rawpoints_this_node(request, node_api_key):
                 'node_id':    node.node_id,
                 'name':       node.name,
                 'owner':      node.owner.username,
+                'nodetype':   node.nodetype.name,
             },
             'info': {
                 'api_request_timestamp': str(time.time()),
@@ -125,7 +126,8 @@ def nodes(request):
 
     for node in Node.objects.all():
         out['nodes'].append({
-            'name': node.description,
+            'name': node.name,
+            'description': node.description,
             'api_key': node.api_key,
         })
 
@@ -222,7 +224,7 @@ def node_info(request, node_api_key):
             'description': n.description,
             'owner': n.owner.username,
             'api_key': n.api_key,
-            'type': n.nodetype.name,
+            'nodetype': n.nodetype.name,
             'gps_lon': n.gps_lon,
             'gps_lat': n.gps_lat,
             'last_rawpoint': str(n.last_rawpoint),
@@ -235,7 +237,10 @@ def node_info(request, node_api_key):
 
 def rawpoints(request):
     if request.method == 'GET':
-        limit = 200
+        if not request.GET.get('limit'):
+            limit = 200
+        else:
+            limit = request.GET.get('limit')
         p_list = Rawpoint.objects.all().order_by('-timestamp')[:limit]
         if request.GET.get('format') == 'csv':
             response = HttpResponse(content_type='text/plain')
@@ -247,14 +252,19 @@ def rawpoints(request):
             out = { 'dataset': [] }
             for p in p_list:
                 out['dataset'].append({
-                                       'payload': p.payload,
-                                       'timestamp': str(p.timestamp),
-                })
+                                          'rawpoint_id': str(p.id),
+                                          'payload':     str(p.payload),
+                                          'datetime':    str(p.timestamp),
+                                          'node': {
+                                              'api_key':  str(p.node.api_key),
+                                              'nodetype': str(p.node.nodetype.name),
+                                          },
+                                     })
             pretty_json = json.dumps(out, indent=4)
             return HttpResponse(pretty_json, content_type="application/json")
 
 @csrf_exempt
-def save_point(request):
+def save_rawpoint(request):
     from datetime import datetime 
     from pprint import pprint
     from django.utils import timezone
@@ -286,6 +296,38 @@ def save_point(request):
                 except Exception as e:
                     point.snr = None 
                 point.timestamp = datetime.fromtimestamp(d['timestamp'], pytz.utc)
+                point.save()
+                out.append({ 'rowid': d['rowid'], 'status': 1 })
+            except Exception as e:
+                out.append({ 'rowid': d['rowid'],
+                             'status': 2,
+                             'status_explain': str(e)
+                          })
+        return JsonResponse(out, safe=False)
+
+@csrf_exempt
+def save_point(request):
+    from datetime import datetime 
+    from pprint import pprint
+    from django.utils import timezone
+    import dateutil.parser
+
+    out = []
+
+    if request.method == 'POST':
+        pprint(request.body)
+        data = json.loads(request.body)
+        for d in data:
+            print("Creating Point for the following:")
+            pprint(d)
+            try: 
+                point = Point()
+                point.node = Node.objects.get(api_key = d['node_api_key'])
+                point.rawpoint = Rawpoint.objects.get(id = d['rawpoint_id'])
+                point.key = Key.objects.get(numeric = d['key'])
+                point.value = d['value']
+                point.rssi = 0
+                point.timestamp = dateutil.parser.parse(d['datetime'])
                 point.save()
                 out.append({ 'rowid': d['rowid'], 'status': 1 })
             except Exception as e:
