@@ -22,6 +22,7 @@ class NodeType(models.Model):
     def __unicode__(self):
          return self.name
     name = models.CharField(max_length=128, default="")
+    keys = models.ManyToManyField(Key)
 
 class Node(models.Model):
     def __unicode__(self):

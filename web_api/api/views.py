@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from api.models import Gateway, Rawpoint, Point, Node, Key
@@ -67,7 +68,7 @@ def rawpoints_this_node(request, node_api_key):
                 'nodetype':   node.nodetype.name,
             },
             'info': {
-                'api_request_timestamp': str(time.time()),
+                'api_request_timestamp': str(timezone.now()),
                 'dataset_size_limit': limit,
                 'dataset_size': len(p_list),
             },
@@ -228,7 +229,11 @@ def node_info(request, node_api_key):
             'gps_lon': n.gps_lon,
             'gps_lat': n.gps_lat,
             'last_rawpoint': str(n.last_rawpoint),
+            'keys': [] 
         }
+
+        for key in n.nodetype.keys.all():
+            out['keys'].append({ 'numeric': key.numeric, 'name': key.key, 'unit': key.unit})
 
     pretty_json = json.dumps(out, indent=4)
     response = HttpResponse(pretty_json, content_type="application/json")
@@ -267,7 +272,6 @@ def rawpoints(request):
 def save_rawpoint(request):
     from datetime import datetime 
     from pprint import pprint
-    from django.utils import timezone
 
     out = []
 
@@ -309,7 +313,6 @@ def save_rawpoint(request):
 def save_point(request):
     from datetime import datetime 
     from pprint import pprint
-    from django.utils import timezone
     import dateutil.parser
 
     out = []
