@@ -89,6 +89,39 @@ def rawpoints_this_node(request, node_api_key):
             pretty_json = json.dumps(out, indent=4)
             return HttpResponse(pretty_json, content_type="application/json")
 
+def rssi_this_node(request, node_api_key):
+    if request.method == 'GET':
+        if not request.GET.get('limit'):
+            limit = 200
+        else:
+            limit = request.GET.get('limit')
+        node = Node.objects.get(api_key = node_api_key)
+        p_list = Rawpoint.objects.filter(node = node).order_by('-timestamp')[:limit]
+        out = {
+            'dataset': [],
+            'node': {
+                'backend_id': node.id,
+                'node_id':    node.node_id,
+                'name':       node.name,
+                'owner':      node.owner.username,
+                'nodetype':   node.nodetype.name,
+            },
+            'info': {
+                'api_request_timestamp': str(timezone.now()),
+                'dataset_size_limit': limit,
+                'dataset_size': len(p_list),
+            },
+        }
+        for p in p_list:
+            out['dataset'].append({
+                'datetime': str(p.timestamp),
+                'timestamp': int((p.timestamp.replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds()),
+                'rssi': p.rssi,
+                'gateway_serial': p.gateway_serial,
+            })
+        pretty_json = json.dumps(out, indent=4)
+        return HttpResponse(pretty_json, content_type="application/json")
+
 def points_this_node_key(request, node_api_key, key_numeric):
     if request.method == 'GET':
         if not request.GET.get('limit'):
