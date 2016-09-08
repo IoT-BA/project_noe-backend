@@ -1,7 +1,7 @@
 from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from api.models import Gateway, Rawpoint, Point, Node, Key
+from api.models import User, Gateway, Rawpoint, Point, Node, Key
 from datetime import datetime
 import csv
 import json
@@ -165,6 +165,37 @@ def nodes(request):
             'description': node.description,
             'api_key': node.api_key,
         })
+
+    pretty_json = json.dumps(out, indent=4)
+    response = HttpResponse(pretty_json, content_type="application/json")
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+def user_info(request, username):
+    ''' User details '''
+
+    user = User.objects.get(username = username)
+
+    out = { 'name': user.username, 'nodes': [] }
+
+    for node in Node.objects.filter(owner = user):
+        out['nodes'].append({ 'name': node.name, 'api_key': node.api_key }) 
+
+    pretty_json = json.dumps(out, indent=4)
+    response = HttpResponse(pretty_json, content_type="application/json")
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+def users(request):
+    ''' List of all Users '''
+
+    out = { 'users': [] }
+
+    for user in User.objects.all():
+        u = { 'name': user.username, 'nodes': [] }
+        for node in Node.objects.filter(owner = user):
+            u['nodes'].append({ 'name': node.name, 'api_key': node.api_key }) 
+        out['users'].append(u)
 
     pretty_json = json.dumps(out, indent=4)
     response = HttpResponse(pretty_json, content_type="application/json")
