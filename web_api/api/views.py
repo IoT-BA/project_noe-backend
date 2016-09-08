@@ -117,6 +117,7 @@ def rssi_this_node(request, node_api_key):
                 'datetime': str(p.timestamp),
                 'timestamp': int((p.timestamp.replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds()),
                 'rssi': p.rssi,
+                'snr': p.snr,
                 'gateway_serial': p.gateway_serial,
             })
         pretty_json = json.dumps(out, indent=4)
