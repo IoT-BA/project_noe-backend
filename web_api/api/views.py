@@ -73,12 +73,33 @@ def rawpoints_this_node(request, node_api_key):
                 'dataset_size': len(p_list),
             },
         }
+
+        seq_number_min = 999999999;
+        seq_number_max = 0;
+        sequenced_points = 0
+
         for p in p_list:
+            if not (p.seq_number is None):
+                if p.seq_number < seq_number_min:
+                    seq_number_min = p.seq_number
+                if p.seq_number > seq_number_max:
+                    seq_number_max = p.seq_number
+                sequenced_points = sequenced_points + 1
             out['dataset'].append({
                 'payload': p.payload,
+                'seq_number': p.seq_number,
                 'datetime': str(p.timestamp),
                 'timestamp': (p.timestamp.replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds(),
             })
+
+        delta_sequence = seq_number_max - seq_number_min
+        out['info']['loss_rate_percent'] = round(100 - (100.0 / float(delta_sequence) * float(sequenced_points)), 1)
+
+        out['info']['seq_delta'] = delta_sequence 
+        out['info']['sequenced_points'] = sequenced_points
+        out['info']['seq_number_min'] = seq_number_min
+        out['info']['seq_number_max'] = seq_number_max
+
         if request.GET.get('format') == 'csv':
             response = HttpResponse(content_type='text/plain')
             writer = csv.writer(response)
@@ -179,7 +200,12 @@ def user_info(request, username):
     out = { 'name': user.username, 'nodes': [] }
 
     for node in Node.objects.filter(owner = user):
-        out['nodes'].append({ 'name': node.name, 'api_key': node.api_key }) 
+        out['nodes'].append({
+            'name': node.name,
+            'id': node.node_id,
+            'api_key': node.api_key,
+            'last_rawpoint': str(node.last_rawpoint),
+        }) 
 
     pretty_json = json.dumps(out, indent=4)
     response = HttpResponse(pretty_json, content_type="application/json")
@@ -359,6 +385,10 @@ def save_rawpoint(request):
 
                 point.node = node
                 point.rssi = d['rssi'] 
+                try:
+                    point.seq_number = d['seq_number'] 
+                except Exception as e:
+                    point.seq_number = None 
                 try:
                     d['snr']
                     point.snr = d['snr'] 

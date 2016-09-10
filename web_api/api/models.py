@@ -51,6 +51,7 @@ class Rawpoint(models.Model):
     timestamp = models.DateTimeField(db_column = 'gw_timestamp')
     node = models.ForeignKey(Node)
     state = models.IntegerField(choices=((0, 'new'), (1, 'processed'), (2, 'failed to process')), default=0)
+    seq_number = models.IntegerField(null=True, blank=True)
     class Meta:
         db_table = 'raw_data'
 

@@ -6,7 +6,7 @@ urlpatterns = [
     url(r'^$', views.index),
     url(r'^node/([0-9a-zA-Z]+)/?$', views.node_info),
     url(r'^rssi/([0-9a-zA-Z]+)/?$', views.rssi_this_node),
-    url(r'^user/([0-9a-zA-Z]+)/?$', views.user_info),
+    url(r'^user/([0-9a-zA-Z\._]+)/?$', views.user_info),
     url(r'^users/?$', views.users),
     url(r'^nodes/?$', views.nodes),
     url(r'^points/save/?$', views.save_point),
