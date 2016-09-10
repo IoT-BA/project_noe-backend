@@ -180,7 +180,7 @@ def nodes(request):
 
     out = { 'nodes': [] }
 
-    for node in Node.objects.all():
+    for node in Node.objects.all().order_by('name'):
         out['nodes'].append({
             'name': node.name,
             'description': node.description,
@@ -199,7 +199,7 @@ def user_info(request, username):
 
     out = { 'name': user.username, 'nodes': [] }
 
-    for node in Node.objects.filter(owner = user):
+    for node in Node.objects.filter(owner = user).order_by('name'):
         out['nodes'].append({
             'name': node.name,
             'id': node.node_id,
@@ -217,7 +217,7 @@ def users(request):
 
     out = { 'users': [] }
 
-    for user in User.objects.all():
+    for user in User.objects.all().order_by('username'):
         u = { 'name': user.username, 'nodes': [] }
         for node in Node.objects.filter(owner = user):
             u['nodes'].append({ 'name': node.name, 'api_key': node.api_key }) 
