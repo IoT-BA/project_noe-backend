@@ -1,7 +1,7 @@
 from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from api.models import User, Gateway, Rawpoint, Point, Node, Key
+from api.models import User, UserExt, Gateway, Rawpoint, Point, Node, Key
 from datetime import datetime
 import csv
 import json
@@ -202,6 +202,7 @@ def user_info(request, username):
     for node in Node.objects.filter(owner = user).order_by('name'):
         out['nodes'].append({
             'name': node.name,
+            'type': node.nodetype.name,
             'id': node.node_id,
             'api_key': node.api_key,
             'last_rawpoint': str(node.last_rawpoint),
@@ -218,7 +219,14 @@ def users(request):
     out = { 'users': [] }
 
     for user in User.objects.all().order_by('username'):
-        u = { 'name': user.username, 'nodes': [] }
+        u = {
+            'name': user.username,
+            'nodes': [],
+        }
+        try:
+            u['user_api_key'] = user.userext.user_api_key
+        except Exception as e:
+            u['user_api_key'] = "" 
         for node in Node.objects.filter(owner = user):
             u['nodes'].append({ 'name': node.name, 'api_key': node.api_key }) 
         out['users'].append(u)

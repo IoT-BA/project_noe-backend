@@ -29,12 +29,12 @@ class Node(models.Model):
          return str(self.node_id) + " - " + str(self.api_key)
     id = models.AutoField(primary_key = True)
     node_id = models.CharField(max_length=256, null=True)
-    api_key = models.CharField(max_length=256, null=True)
+    api_key = models.CharField(max_length=256, null=False, blank=False)
     name = models.CharField(max_length=128, default="")
     location = models.CharField(max_length=512, default="")
     description = models.TextField()
     owner = models.ForeignKey(User)
-    nodetype = models.ForeignKey(NodeType, null=True)
+    nodetype = models.ForeignKey(NodeType, null=False, blank=False)
     gps_lon = models.FloatField(default=0.0)
     gps_lat = models.FloatField(default=0.0)
     last_rawpoint = models.DateTimeField(null=True, blank=True)
@@ -70,3 +70,10 @@ class Point(models.Model):
     class Meta:
         db_table = 'parsed_data'
 
+class UserExt(models.Model):
+    user = models.OneToOneField(User) 
+    user_api_key = models.CharField(
+        max_length=256,
+        null=True,
+        blank=True,
+    )
