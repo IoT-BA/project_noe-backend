@@ -1,12 +1,14 @@
-from django.utils import timezone
-from django.http import HttpResponse, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from api.models import User, UserExt, Gateway, Rawpoint, Point, Node, Key
-from datetime import datetime
 import csv
 import json
 import time
 import pytz
+import pika
+
+from api.models import User, UserExt, Gateway, Rawpoint, Point, Node, Key
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
+from datetime import datetime
 
 def index(request):
     return HttpResponse("Not much to see here mate!")
@@ -53,11 +55,11 @@ def points_this_node(request, node_api_key):
 def rawpoints_this_node(request, node_api_key):
     if request.method == 'GET':
         if not request.GET.get('limit'):
-            limit = 200
+            limit = 3000
         else:
             limit = request.GET.get('limit')
         node = Node.objects.get(api_key = node_api_key)
-        p_list = Rawpoint.objects.filter(node = node).order_by('-timestamp')[:limit]
+        p_list = Rawpoint.objects.filter(node = node).order_by('-timestamp').distinct()[:limit]
         out = {
             'dataset': [],
             'node': {
@@ -328,11 +330,13 @@ def node_info(request, node_api_key):
             'gps_lon': n.gps_lon,
             'gps_lat': n.gps_lat,
             'last_rawpoint': str(n.last_rawpoint),
-            'keys': [] 
+            'keys': [],
+            'key_numeric': {},
         }
 
         for key in n.nodetype.keys.all():
-            out['keys'].append({ 'numeric': key.numeric, 'name': key.key, 'unit': key.unit})
+            out['keys'].append( { 'numeric': key.numeric, 'name': key.key, 'unit': key.unit } )
+            out['key_numeric'][str(key.numeric)] = { 'numeric': key.numeric, 'name': key.key, 'unit': key.unit }
 
     pretty_json = json.dumps(out, indent=4)
     response = HttpResponse(pretty_json, content_type="application/json")
@@ -371,6 +375,7 @@ def rawpoints(request):
 def save_rawpoint(request):
     from datetime import datetime 
     from pprint import pprint
+    from django.core import serializers
 
     out = []
 
@@ -410,6 +415,30 @@ def save_rawpoint(request):
                              'status': 2,
                              'status_explain': str(e)
                           })
+
+            try:
+                credentials = pika.PlainCredentials('test', 'myonetest')
+                connection = pika.BlockingConnection(
+                    pika.ConnectionParameters(
+                        host='127.0.0.1',
+                        virtual_host="iot",
+                        credentials=credentials
+                    )
+                )
+                channel = connection.channel()
+                channel.basic_qos(prefetch_count=1)
+                result = channel.queue_declare(queue='rawpoints_in', durable=True)
+
+                pretty_json = serializers.serialize("json", [point]) 
+ 
+                channel.basic_publish(
+                    exchange='',
+                    routing_key='rawpoints_in',
+                    body=pretty_json,
+                )
+            except Exception as e:
+                print("Not sent to RabbitMQ: " + str(e))
+
         return JsonResponse(out, safe=False)
 
 @csrf_exempt
@@ -421,10 +450,9 @@ def save_point(request):
     out = []
 
     if request.method == 'POST':
-        pprint(request.body)
         data = json.loads(request.body)
         for d in data:
-            print("Creating Point for the following:")
+            print("Saving Point from following source data:")
             pprint(d)
             try: 
                 point = Point()

@@ -2,11 +2,7 @@ import json
 import struct
 
 def parse_mq_payload(payload):
-    try:
-        data = json.loads(payload)
-    except Exception as e:
-        print str(e)
-        raise
+    data = json.loads(payload)
 
     try:
         data['gw_timestamp'] = str(data['gw_timestamp'])

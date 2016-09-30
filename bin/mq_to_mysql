@@ -36,10 +36,11 @@ def insert_into_mysql(sql, data):
 def callback(channel, method, properties, body):
     try:
         data = iot.parse_mq_payload(body)
-    except struct.error as e:
-        print str(e)
+    except Exception as e:
+        print(str(e))
         channel.basic_nack(delivery_tag = method.delivery_tag, requeue=False)
-        return
+        pprint(body)
+        return 
 
     try:
         sql = """INSERT INTO raw_data (gw_serial, payload, rssi, gw_timestamp) VALUES (%s, '%s', %s, '%s')"""
@@ -90,8 +91,10 @@ channel.basic_qos(prefetch_count=1)
 result = channel.queue_declare(queue='for_mysql', durable=True)
 channel.queue_bind(exchange='iot', queue=result.method.queue)
 channel.basic_consume(callback, queue='for_mysql')
+
 try:
     channel.start_consuming()
 except KeyboardInterrupt:
     channel.stop_consuming()
+
 connection.close()
