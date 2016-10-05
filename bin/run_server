@@ -1,3 +1,0 @@
-#!/bin/bash
-
-twistd -n -y server.py

@@ -55,6 +55,20 @@ class Rawpoint(models.Model):
     class Meta:
         db_table = 'raw_data'
 
+class LoRaWANRawPoint(models.Model):
+    def __unicode__(self):
+         return str(self.id)
+    chan = models.IntegerField(null=True, blank=True)
+    codr = models.CharField(max_length=16, null=True, blank=True)
+    data = models.TextField(null=True, blank=True)
+    datr = models.CharField(max_length=16, null=True, blank=True)
+    freq = models.FloatField(null=True, blank=True)
+    lsnr = models.FloatField(null=True, blank=True)
+    rssi = models.IntegerField(null=True, blank=True)
+    time = models.DateTimeField(null=True, blank=True)
+    tmst = models.IntegerField(null=True, blank=True)
+    gateway_serial = models.CharField(max_length=128, null=True, blank=True)
+
 class Point(models.Model):
     def __unicode__(self):
          return str(self.id)

@@ -4,11 +4,12 @@ import time
 import pytz
 import pika
 
-from api.models import User, UserExt, Gateway, Rawpoint, Point, Node, Key
+from api.models import User, UserExt, Gateway, LoRaWANRawPoint, Rawpoint, Point, Node, Key
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from datetime import datetime
+import dateutil.parser
 
 def index(request):
     return HttpResponse("Not much to see here mate!")
@@ -445,7 +446,6 @@ def save_rawpoint(request):
 def save_point(request):
     from datetime import datetime 
     from pprint import pprint
-    import dateutil.parser
 
     out = []
 
@@ -469,4 +469,44 @@ def save_point(request):
                              'status': 2,
                              'status_explain': str(e)
                           })
+        return JsonResponse(out, safe=False)
+
+@csrf_exempt
+def save_lorawanrawpoint(request):
+    from datetime import datetime 
+    from pprint import pprint
+
+    out = []
+
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except Exception as e:
+            return JsonResponse([{
+                    'status': 'unable to parse request body to JSON',
+                    'string': str(request.body),
+                }], safe=False)
+        for d in data['i']['rxpk']:
+            try: 
+                point = LoRaWANRawPoint()
+                point.chan = d['chan'] 
+                point.codr = d['codr'] 
+                point.data = d['data'] 
+                point.datr = d['datr'] 
+                point.freq = d['freq'] 
+                point.lsnr = d['lsnr'] 
+                point.rssi = d['rssi'] 
+                point.time = dateutil.parser.parse(d['time'])
+                point.tmst = d['tmst'] 
+                point.gateway_serial = data['gateway_mac_ident'] 
+                point.save()
+                out.append({
+                        'status': 'saved'
+                    })
+            except Exception as e:
+                out.append({
+                        'status': 'save failed',
+                        'status_explain': str(e),
+                        'currently processing': str(json.dumps(d))
+                    })
         return JsonResponse(out, safe=False)
