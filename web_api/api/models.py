@@ -10,6 +10,7 @@ class Gateway(models.Model):
     gps_lon = models.FloatField(default=0.0, blank=True)
     gps_lat = models.FloatField(default=0.0, blank=True)
     serial = models.CharField(max_length=128, default="", blank=True)
+    lorawan_band = models.IntegerField(choices=((0, 'EU863-870'), (1, 'US902-928'), (2, 'CN779-787'), (3, 'EU433')), null=True, blank=True)
 
 class Key(models.Model):
     def __unicode__(self):
@@ -46,9 +47,11 @@ class Node(models.Model):
     gps_lat = models.FloatField(default=0.0)
     last_rawpoint = models.DateTimeField(null=True, blank=True)
     lorawan_application = models.ForeignKey(LoRaWANApplication, null=True, blank=True)
-    lorawan_DevEUI = models.CharField(max_length=128, null=True, blank=True)
-    lorawan_NwkSKey = models.CharField(max_length=128, null=True, blank=True)
-    lorawan_AppSKey = models.CharField(max_length=128, null=True, blank=True)
+    lorawan_DevEUI   = models.CharField(max_length=128, null=True, blank=True)
+    lorawan_NwkSKey  = models.CharField(max_length=128, null=True, blank=True)
+    lorawan_AppSKey  = models.CharField(max_length=128, null=True, blank=True)
+    lorawan_FCntUp   = models.IntegerField(default=0)
+    lorawan_FCntDown = models.IntegerField(default=0)
 
 class Rawpoint(models.Model):
     def __unicode__(self):
@@ -79,8 +82,13 @@ class LoRaWANRawPoint(models.Model):
     time = models.DateTimeField(null=True, blank=True)
     tmst = models.IntegerField(null=True, blank=True)
     DevAddr = models.CharField(max_length=32, null=True, blank=True)
-    FCnt = models.IntegerField(null=True, blank=True)
+    FCtrl   = models.CharField(max_length=10, null=True, blank=True)
+    FCnt    = models.IntegerField(null=True, blank=True)
+    FOpts   = models.CharField(max_length=40, null=True, blank=True)
+    MType = models.IntegerField(null=True, blank=True)
+    FPort = models.IntegerField(null=True, blank=True)
     FRMPayload = models.TextField(null=True, blank=True)
+    MIC = models.CharField(max_length=16, null=True, blank=True)
     gateway_serial = models.CharField(max_length=128, null=True, blank=True)
     gw   = models.ForeignKey(Gateway, null=True, blank=True)
     node = models.ForeignKey(Node, null=True, blank=True)

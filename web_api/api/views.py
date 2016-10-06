@@ -13,6 +13,7 @@ from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from datetime import datetime
 import dateutil.parser
+from pprint import pprint
 
 def index(request):
     return HttpResponse("Not much to see here mate!")
@@ -201,22 +202,49 @@ def nodes(request):
 def lorawan_points_all(request):
     ''' All LoRaWAN raw points, but try to decrypt them '''
 
-    out = { 'rawpoints': [] }
-    for point in LoRaWANRawPoint.objects.all().order_by('-id')[:100]:
+    out = { 'points': [] }
+    for point in LoRaWANRawPoint.objects.all().order_by('-id')[:1000]:
 
-        FRMPayload_decrypted = loramac_decrypt(point.FRMPayload, point.FCnt, point.node.lorawan_AppSKey, point.DevAddr)
-        FRMPayload_decrypted_hex = []
-        for i in FRMPayload_decrypted:
-            FRMPayload_decrypted_hex.append(hex(i))
+        p = {}
 
-        out['rawpoints'].append({
-                'id': point.id,
-                'FRMPayload': point.FRMPayload,
-                'FCnt': point.FCnt,
-                'DevAddr': point.DevAddr,
-                'AppSKey': point.node.lorawan_AppSKey,
-                'FRMPayload_decrypted': "".join("{:02x}".format(c) for c in FRMPayload_decrypted),
-            })
+        p['id'] = point.id
+        p['FRMPayload'] = point.FRMPayload
+        p['FCnt'] = point.FCnt
+        p['FPort'] = point.FPort
+        p['DevAddr'] = point.DevAddr
+
+        MTypes = (
+                     'Join Request',
+                     'Join Accept',
+                     'Unconfirmed Data Up',
+                     'Unconfirmed Data Down',
+                     'Confirmed Data Up',
+                     'Confirmed Data Down',
+                     'RFU',
+                     'Proprietary',
+                 )
+
+        if point.MType:
+            p['MType_description'] = MTypes[point.MType]
+        else:
+            pass 
+
+        try:
+            # LoRaWAN spec 1.0; section 4.3.3.1
+            if point.FPort == 0:
+                SKey = point.node.lorawan_NwkSKey
+                p['SKey_used'] = 'NwkSKey'
+            else:
+                SKey = point.node.lorawan_AppSKey
+                p['SKey_used'] = 'AppSKey'
+            FRMPayload_decrypted = ""
+            FRMPayload_decrypted = loramac_decrypt(point.FRMPayload, point.FCnt, SKey, point.DevAddr)
+            p['FRMPayload_decrypted'] = "".join("{:02x}".format(c) for c in FRMPayload_decrypted)
+        except Exception as e:
+            p['error'] = "Unable to decrypt LoRaWAN packet " + str(e)
+
+
+        out['points'].append(p)
 
     pretty_json = json.dumps(out, indent=4)
     response = HttpResponse(pretty_json, content_type="application/json")
@@ -403,7 +431,6 @@ def rawpoints(request):
 @csrf_exempt
 def save_rawpoint(request):
     from datetime import datetime 
-    from pprint import pprint
     from django.core import serializers
 
     out = []
@@ -473,7 +500,6 @@ def save_rawpoint(request):
 @csrf_exempt
 def save_point(request):
     from datetime import datetime 
-    from pprint import pprint
 
     out = []
 
@@ -502,7 +528,6 @@ def save_point(request):
 @csrf_exempt
 def save_lorawanrawpoint(request):
     from datetime import datetime 
-    from pprint import pprint
 
     out = []
 
@@ -531,17 +556,22 @@ def save_lorawanrawpoint(request):
                 PHYPayload = []
                 for c in base64.decodestring(d['data']):
                     PHYPayload.append(ord(c))
-                MHDR       = PHYPayload[0]
-                MACPayload = PHYPayload[1:-4]
-                MIC        = PHYPayload[-4:]
+                MHDR        = PHYPayload[0]
+                point.MType = int(MHDR >> 5)
+                MACPayload  = PHYPayload[1:-4]
 
-                FHDR       = MACPayload[:7]
-                FPort      = MACPayload[7]
-                FRMPayload = MACPayload[8:]
+                FHDR        = MACPayload[:7]
+                FRMPayload  = MACPayload[8:]
 
-                point.DevAddr    = "".join("{:02x}".format(FHDR[c]) for c in range(3,-1,-1))
+                point.FPort      = int(MACPayload[7])
+                point.MIC        = "".join("{:02x}".format(c) for c in PHYPayload[-4:])
                 point.FRMPayload = "".join("{:02x}".format(c) for c in PHYPayload[1:-4][8:])
-                point.FCnt       = struct.unpack("<H", "".join(chr(c) for c in FHDR[5:7]))[0]
+
+                # LoRaWAN 1.0, section 4.3.1
+                point.DevAddr = "".join("{:02x}".format(FHDR[c]) for c in range(3,-1,-1))
+                point.FCtrl   = "{:02x}".format(FHDR[4])
+                point.FCnt    = struct.unpack("<H", "".join(chr(c) for c in FHDR[5:7]))[0]
+                point.FOpts   = "".join("{:02x}".format(FHDR[c]) for c in FHDR[7:])
 
                 try:
                     point.gw = Gateway.objects.get(serial = data['gateway_mac_ident'])
@@ -550,7 +580,10 @@ def save_lorawanrawpoint(request):
 
                 try:
                     point.node = Node.objects.get(node_id = point.DevAddr)
+                    point.node.lorawan_FCntUp = point.node.lorawan_FCntUp + 1
+                    point.node.save()
                 except Exception as e:
+                    print(str(e))
                     pass
 
                 point.save()
