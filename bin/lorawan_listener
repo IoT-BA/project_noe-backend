@@ -10,7 +10,6 @@ import argparse
 import requests
 from pprint import pprint 
 from datetime import datetime
-from lora.crypto import loramac_decrypt
 
 parser = argparse.ArgumentParser(description='Semtech LoRaWAN packet forwarder listener')
 parser.add_argument('-v', '--verbose', action='store_true', help='Be verbose')
@@ -32,25 +31,39 @@ while True:
     data, addr = sock.recvfrom(4000)
     dt = datetime.now()
 
+    info = {}
+
+    info['data_hex']          = "".join("{:02x}".format(ord(c)) for c in data)
     info['protocol_version']  = ord(data[0])
     info['random_token']      = "".join("{:02x}".format(ord(c)) for c in data[1:3]) 
     info['packet_type']       = struct.unpack("B", data[3])[0] 
     info['packet_type_human'] = packet_types[struct.unpack("B", data[3])[0]]
     info['gateway_mac_ident'] = "".join("{:02x}".format(ord(c)) for c in data[4:12]) 
 
-    if info['packet_type_human'] == 'PKT_PULL_DATA':
+    if 'PKT_PULL_DATA' in info['packet_type_human']:
+        print("PKT_PULL_DATA packet...we respond with PULL_ACK")
+        pull_ack = []
+        pull_ack.append(ord(data[0]))
+        pull_ack.append(ord(data[1]))
+        pull_ack.append(ord(data[2]))
+        pull_ack.append(0x04)
+        sock.sendto("".join(chr(c) for c in pull_ack), addr)
         continue
-
-    print(str(dt.isoformat("T")) + " received packet from forwarder (protocol version " + str(info['protocol_version']) + "). Packet type: " + info['packet_type_human'])
-
 
     try:
         info['i'] = json.loads("".join("{:02x}".format(ord(c)) for c in data[12:]).decode('hex'))
     except Exception as e:
-        pass
+        pprint(info)
+        print("ERROR: Unable to load JSON from packet...skipping")
+        continue 
 
-    if info['packet_type_human'] != 'PKT_PUSH_DATA':
+    if 'stat' in info['i']:
+        print("Gateway status packet...skipping")
+        #pprint(info['i'])
         continue
+
+    print(str(dt.isoformat("T")) + " received packet from forwarder (protocol version " + str(info['protocol_version']) + "). Packet type: " + info['packet_type_human'])
+    pprint(info)
 
     if 'rxpk' in info['i']:
         '''The 'data' payload is actually a PHYPayload from LoRaWAN spec.
@@ -59,40 +72,36 @@ while True:
 
         d = info['i']['rxpk'][0]['data']
 
-        pprint(info)
+        info['PHYPayload'] = []
+        for c in base64.decodestring(d):
+            info['PHYPayload'].append(ord(c))
+
+        PHYPayload_hex = "".join("{:02x}".format(c) for c in info['PHYPayload'])
+        MHDR       = info['PHYPayload'][0]
+        MACPayload = info['PHYPayload'][1:-4]
+        MIC        = info['PHYPayload'][-4:]
+
+        MType = MHDR >> 5
+
+        #info['DevAddr']   = "".join("{:02x}".format(info['FHDR'][c]) for c in range(3,-1,-1))
+        #info['FCnt']      = struct.unpack("<H", "".join(chr(c) for c in info['FHDR'][5:7]))[0] 
+        #info['FCtrl']     = info['FHDR'][4]
+
+        #payload = ''.join("{:02x}".format(c) for c in info['FRMPayload'])
+
+        # join-request packet
+        if MType == 0:
+            AppEUI   = info['PHYPayload'][1:9]
+            DevEUI   = info['PHYPayload'][9:17]
+            DevNonce = info['PHYPayload'][17:19]
+            print("join-request message") 
+            print("PHYPayload_hex: " + "".join("{:02x}".format(c) for c in info['PHYPayload']))
+            print("AppEUI:   " + "".join("{:02x}".format(c) for c in AppEUI))
+            print("DevEUI:   " + "".join("{:02x}".format(c) for c in DevEUI))
+            print("DevNonce: " + "".join("{:02x}".format(c) for c in DevNonce))
+            continue
 
         try:
             r = requests.post('http://lorawan.sk:8000/api/lorawan/save', json=info)
         except Exception as e:
             pass
-
-        info['PHYPayload'] = []
-        for c in base64.decodestring(d):
-            info['PHYPayload'].append(ord(c))
-
-        info['MHDR']       = info['PHYPayload'][0]
-        info['MACPayload'] = info['PHYPayload'][1:-4]
-        info['MIC']        = info['PHYPayload'][-4:]
-
-        info['FHDR']       = info['MACPayload'][:7]
-        info['FPort']      = info['MACPayload'][7]
-        info['FRMPayload'] = info['MACPayload'][8:]
-
-        info['DevAddr']   = "".join("{:02x}".format(info['FHDR'][c]) for c in range(3,-1,-1))
-        info['FCnt']      = struct.unpack("<H", "".join(chr(c) for c in info['FHDR'][5:7]))[0] 
-        info['FCtrl']     = info['FHDR'][4]
-
-        payload = ''.join("{:02x}".format(c) for c in info['FRMPayload'])
-
-        if args.verbose:
-            print("Will try to decode the FRMPayload payload " + payload) 
-        key = '820EB5127B0B98C8CC0B7EE43253E0D1'
-
-        out = loramac_decrypt(payload, info['FCnt'], key, info['DevAddr'])
-        # info['decrypted_payload'] = out
-        if args.verbose:
-            pprint(info)
-
-    if 'stat' in info['i']:
-        print("Gateway status packet:")
-        pprint(info['i'])

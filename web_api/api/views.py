@@ -563,6 +563,8 @@ def save_lorawanrawpoint(request):
                 FHDR        = MACPayload[:7]
                 FRMPayload  = MACPayload[8:]
 
+                point.PHYPayload = "".join("{:02x}".format(c) for c in PHYPayload)
+
                 point.FPort      = int(MACPayload[7])
                 point.MIC        = "".join("{:02x}".format(c) for c in PHYPayload[-4:])
                 point.FRMPayload = "".join("{:02x}".format(c) for c in PHYPayload[1:-4][8:])
