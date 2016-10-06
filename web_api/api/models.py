@@ -24,6 +24,13 @@ class NodeType(models.Model):
     name = models.CharField(max_length=128, default="")
     keys = models.ManyToManyField(Key)
 
+class LoRaWANApplication(models.Model):
+    def __unicode__(self):
+         return self.name + " (" + self.AppEUI + ")"
+    name = models.CharField(max_length=128)
+    AppEUI = models.CharField(max_length=128)
+    api_key = models.CharField(max_length=256, null=True, blank=True)
+
 class Node(models.Model):
     def __unicode__(self):
          return str(self.node_id) + " - " + str(self.api_key)
@@ -38,6 +45,10 @@ class Node(models.Model):
     gps_lon = models.FloatField(default=0.0)
     gps_lat = models.FloatField(default=0.0)
     last_rawpoint = models.DateTimeField(null=True, blank=True)
+    lorawan_application = models.ForeignKey(LoRaWANApplication, null=True, blank=True)
+    lorawan_DevEUI = models.CharField(max_length=128, null=True, blank=True)
+    lorawan_NwkSKey = models.CharField(max_length=128, null=True, blank=True)
+    lorawan_AppSKey = models.CharField(max_length=128, null=True, blank=True)
 
 class Rawpoint(models.Model):
     def __unicode__(self):
@@ -67,7 +78,11 @@ class LoRaWANRawPoint(models.Model):
     rssi = models.IntegerField(null=True, blank=True)
     time = models.DateTimeField(null=True, blank=True)
     tmst = models.IntegerField(null=True, blank=True)
+    DevAddr = models.CharField(max_length=32, null=True, blank=True)
+    FRMPayload = models.TextField(null=True, blank=True)
     gateway_serial = models.CharField(max_length=128, null=True, blank=True)
+    gw   = models.ForeignKey(Gateway, null=True, blank=True)
+    node = models.ForeignKey(Node, null=True, blank=True)
 
 class Point(models.Model):
     def __unicode__(self):

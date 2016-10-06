@@ -7,6 +7,7 @@ from api.models import Key
 from api.models import Rawpoint
 from api.models import UserExt
 from api.models import LoRaWANRawPoint 
+from api.models import LoRaWANApplication 
 
 class GatewayAdmin(admin.ModelAdmin):
     list_display = ('id', 'description', 'owner', 'serial', 'location')
@@ -14,6 +15,10 @@ class GatewayAdmin(admin.ModelAdmin):
 class RawpointAdmin(admin.ModelAdmin):
     list_display = ('id', 'seq_number', 'timestamp', 'payload', 'rssi', 'snr', 'node_id', 'gw', 'gateway_serial', 'state')
     list_filter = ('node_id', 'gw', 'gateway_serial')
+
+class LoRaWANRawPointAdmin(admin.ModelAdmin):
+    list_display = ('id', 'DevAddr')
+    list_filter = ('DevAddr', 'datr', 'chan')
 
 class PointAdmin(admin.ModelAdmin):
     list_display = ('id', 'timestamp', 'node_id', 'key', 'value', 'rssi', 'gw')
@@ -34,4 +39,5 @@ admin.site.register(Key, KeyAdmin)
 admin.site.register(Point, PointAdmin)
 admin.site.register(Rawpoint, RawpointAdmin)
 admin.site.register(UserExt)
-admin.site.register(LoRaWANRawPoint)
+admin.site.register(LoRaWANRawPoint, LoRaWANRawPointAdmin)
+admin.site.register(LoRaWANApplication)

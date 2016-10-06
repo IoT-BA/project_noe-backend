@@ -3,6 +3,7 @@ import json
 import time
 import pytz
 import pika
+import base64
 
 from api.models import User, UserExt, Gateway, LoRaWANRawPoint, Rawpoint, Point, Node, Key
 from django.views.decorators.csrf import csrf_exempt
@@ -499,6 +500,31 @@ def save_lorawanrawpoint(request):
                 point.time = dateutil.parser.parse(d['time'])
                 point.tmst = d['tmst'] 
                 point.gateway_serial = data['gateway_mac_ident'] 
+
+                PHYPayload = []
+                for c in base64.decodestring(d['data']):
+                    PHYPayload.append(ord(c))
+                MHDR       = PHYPayload[0]
+                MACPayload = PHYPayload[1:-4]
+                MIC        = PHYPayload[-4:]
+
+                FHDR       = MACPayload[:7]
+                FPort      = MACPayload[7]
+                FRMPayload = MACPayload[8:]
+
+                point.DevAddr    = "".join("{:02x}".format(FHDR[c]) for c in range(3,-1,-1))
+                point.FRMPayload = "".join("{:02x}".format(c) for c in PHYPayload[1:-4][8:])
+
+                try:
+                    point.gw = Gateway.objects.get(serial = data['gateway_mac_ident'])
+                except Exception as e:
+                    pass
+
+                try:
+                    point.node = Node.objects.get(node_id = point.DevAddr)
+                except Exception as e:
+                    pass
+
                 point.save()
                 out.append({
                         'status': 'saved'
@@ -509,4 +535,6 @@ def save_lorawanrawpoint(request):
                         'status_explain': str(e),
                         'currently processing': str(json.dumps(d))
                     })
+                pprint(out)
+                raise
         return JsonResponse(out, safe=False)
