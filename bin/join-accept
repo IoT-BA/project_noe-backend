@@ -1,0 +1,15 @@
+#!/usr/bin/python
+
+from pprint import pprint
+
+AppNonce = ( 1, 2, 3 )
+NetID = ( 1, 2, 3 )
+DevAddr = ( 1, 2, 3, 4 )
+DLSettings = ( 1, )
+RxDelay = ( 1, )
+CFList = ()
+
+join_accept = AppNonce + NetID + DevAddr + DLSettings + RxDelay + CFList
+
+pprint(join_accept)
+
