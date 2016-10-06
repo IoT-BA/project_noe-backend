@@ -79,6 +79,7 @@ class LoRaWANRawPoint(models.Model):
     time = models.DateTimeField(null=True, blank=True)
     tmst = models.IntegerField(null=True, blank=True)
     DevAddr = models.CharField(max_length=32, null=True, blank=True)
+    FCnt = models.IntegerField(null=True, blank=True)
     FRMPayload = models.TextField(null=True, blank=True)
     gateway_serial = models.CharField(max_length=128, null=True, blank=True)
     gw   = models.ForeignKey(Gateway, null=True, blank=True)

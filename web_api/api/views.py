@@ -4,6 +4,8 @@ import time
 import pytz
 import pika
 import base64
+import struct
+from lora.crypto import loramac_decrypt
 
 from api.models import User, UserExt, Gateway, LoRaWANRawPoint, Rawpoint, Point, Node, Key
 from django.views.decorators.csrf import csrf_exempt
@@ -190,6 +192,31 @@ def nodes(request):
             'description': node.description,
             'api_key': node.api_key,
         })
+
+    pretty_json = json.dumps(out, indent=4)
+    response = HttpResponse(pretty_json, content_type="application/json")
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+def lorawan_points_all(request):
+    ''' All LoRaWAN raw points, but try to decrypt them '''
+
+    out = { 'rawpoints': [] }
+    for point in LoRaWANRawPoint.objects.all().order_by('-id')[:100]:
+
+        FRMPayload_decrypted = loramac_decrypt(point.FRMPayload, point.FCnt, point.node.lorawan_AppSKey, point.DevAddr)
+        FRMPayload_decrypted_hex = []
+        for i in FRMPayload_decrypted:
+            FRMPayload_decrypted_hex.append(hex(i))
+
+        out['rawpoints'].append({
+                'id': point.id,
+                'FRMPayload': point.FRMPayload,
+                'FCnt': point.FCnt,
+                'DevAddr': point.DevAddr,
+                'AppSKey': point.node.lorawan_AppSKey,
+                'FRMPayload_decrypted': "".join("{:02x}".format(c) for c in FRMPayload_decrypted),
+            })
 
     pretty_json = json.dumps(out, indent=4)
     response = HttpResponse(pretty_json, content_type="application/json")
@@ -514,6 +541,7 @@ def save_lorawanrawpoint(request):
 
                 point.DevAddr    = "".join("{:02x}".format(FHDR[c]) for c in range(3,-1,-1))
                 point.FRMPayload = "".join("{:02x}".format(c) for c in PHYPayload[1:-4][8:])
+                point.FCnt       = struct.unpack("<H", "".join(chr(c) for c in FHDR[5:7]))[0]
 
                 try:
                     point.gw = Gateway.objects.get(serial = data['gateway_mac_ident'])

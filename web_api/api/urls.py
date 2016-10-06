@@ -11,6 +11,7 @@ urlpatterns = [
     url(r'^nodes/?$', views.nodes),
     url(r'^points/save/?$', views.save_point),
     url(r'^lorawan/save/?$', views.save_lorawanrawpoint),
+    url(r'^lorawan/points/all/?$', views.lorawan_points_all),
     url(r'^points/([0-9a-zA-Z]+)/([0-9]+)/?$', views.points_this_node_key),
     url(r'^points/([0-9a-zA-Z]+)/?$', views.points_this_node),
     url(r'^points/all/([0-9]+)/?$', views.points_all_nodes_key),
