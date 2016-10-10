@@ -4,3 +4,4 @@ cd doc && mysql -u root -p < ./mariadb_schema.sql
 CREATE USER iot IDENTIFIED BY 'SmBYWmfaeVyspqfa';
 GRANT ALL ON iot.* TO iot;
 
+apt-get install mosquitto python-mosquitto

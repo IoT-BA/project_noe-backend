@@ -10,6 +10,8 @@ import argparse
 import requests
 from pprint import pprint 
 from datetime import datetime
+import paho.mqtt.client as mqtt # mosquitto.py is deprecated
+
 
 parser = argparse.ArgumentParser(description='Semtech LoRaWAN packet forwarder listener')
 parser.add_argument('-v', '--verbose', action='store_true', help='Be verbose')
@@ -27,6 +29,10 @@ sock.bind((UDP_IP, UDP_PORT))
 
 print("Listener started")
 
+mqttc = mqtt.Client(client_id="ioana", protocol=mqtt.MQTTv31)
+mqttc.connect("127.0.0.1", 1883, 60)
+mqttc.loop_start()
+
 while True:
     data, addr = sock.recvfrom(4000)
     dt = datetime.now()
@@ -42,6 +48,7 @@ while True:
 
     if 'PKT_PULL_DATA' in info['packet_type_human']:
         print("PKT_PULL_DATA packet...we respond with PULL_ACK")
+        mqttc.publish("iot", "PKT_PULL_DATA packet...we respond with PULL_ACK")
         pull_ack = []
         pull_ack.append(ord(data[0]))
         pull_ack.append(ord(data[1]))
@@ -55,14 +62,17 @@ while True:
     except Exception as e:
         pprint(info)
         print("ERROR: Unable to load JSON from packet...skipping")
+        mqttc.publish("iot", "ERROR: Unable to load JSON from packet...skipping")
         continue 
 
     if 'stat' in info['i']:
         print("Gateway status packet...skipping")
+        mqttc.publish("iot", "Gateway status packet...skipping")
         #pprint(info['i'])
         continue
 
     print(str(dt.isoformat("T")) + " received packet from forwarder (protocol version " + str(info['protocol_version']) + "). Packet type: " + info['packet_type_human'])
+    mqttc.publish("iot", str(dt.isoformat("T")) + " received packet from forwarder (protocol version " + str(info['protocol_version']) + "). Packet type: " + info['packet_type_human'])
     pprint(info)
 
     if 'rxpk' in info['i']:

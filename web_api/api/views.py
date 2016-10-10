@@ -15,8 +15,35 @@ from datetime import datetime
 import dateutil.parser
 from pprint import pprint
 
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login, logout
+
 def index(request):
     return HttpResponse("Not much to see here mate!")
+
+@csrf_exempt
+def user_login(request):
+    logout(request)
+    username = password = ''
+    if request.GET:
+        username = request.GET.get('username')
+        password = request.GET.get('password')
+
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            if user.is_active:
+                login(request, user)
+                out = {
+                          'user_access_key': str(user.userext.user_api_key),
+                          'login': 'ok',
+                      }
+                pretty_json = json.dumps(out, indent=4)
+                return HttpResponse(pretty_json, content_type="application/json")
+    out = {
+              'login': 'failed',
+          }
+    pretty_json = json.dumps(out, indent=4)
+    return HttpResponse(pretty_json, content_type="application/json", status=401)
 
 @csrf_exempt
 def points_this_node(request, node_api_key):
@@ -234,9 +261,11 @@ def lorawan_points_all(request):
             if point.FPort == 0:
                 SKey = point.node.lorawan_NwkSKey
                 p['SKey_used'] = 'NwkSKey'
+                p['NwkSKey'] = point.node.lorawan_NwkSKey
             else:
                 SKey = point.node.lorawan_AppSKey
                 p['SKey_used'] = 'AppSKey'
+                p['AppSKey'] = point.node.lorawan_AppSKey
             FRMPayload_decrypted = ""
             FRMPayload_decrypted = loramac_decrypt(point.FRMPayload, point.FCnt, SKey, point.DevAddr)
             p['FRMPayload_decrypted'] = "".join("{:02x}".format(c) for c in FRMPayload_decrypted)

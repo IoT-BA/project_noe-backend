@@ -20,4 +20,5 @@ urlpatterns = [
     url(r'^rawpoints/([0-9a-zA-Z]+)/?$', views.rawpoints_this_node),
     url(r'^rawpoints/?$', views.rawpoints),
     url(r'^gis/?$', views.gis),
+    url(r'^login/?$', views.user_login),
 ]
