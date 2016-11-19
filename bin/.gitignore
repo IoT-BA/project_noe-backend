@@ -1,2 +1,3 @@
 twistd.log
 local.cfg
+*.pyc
