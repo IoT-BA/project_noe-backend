@@ -463,6 +463,7 @@ def save_rawpoint(request):
     from django.core import serializers
 
     out = []
+    status_code = 200
 
     if request.method == 'POST':
         pprint(request.body)
@@ -496,35 +497,13 @@ def save_rawpoint(request):
                 point.save()
                 out.append({ 'rowid': d['rowid'], 'status': 1 })
             except Exception as e:
-                out.append({ 'rowid': d['rowid'],
+                out.append({
                              'status': 2,
-                             'status_explain': str(e)
+                             'status_explain': str(e),
+                             'row': d
                           })
-
-            try:
-                credentials = pika.PlainCredentials('test', 'myonetest')
-                connection = pika.BlockingConnection(
-                    pika.ConnectionParameters(
-                        host='127.0.0.1',
-                        virtual_host="iot",
-                        credentials=credentials
-                    )
-                )
-                channel = connection.channel()
-                channel.basic_qos(prefetch_count=1)
-                result = channel.queue_declare(queue='rawpoints_in', durable=True)
-
-                pretty_json = serializers.serialize("json", [point]) 
- 
-                channel.basic_publish(
-                    exchange='',
-                    routing_key='rawpoints_in',
-                    body=pretty_json,
-                )
-            except Exception as e:
-                print("Not sent to RabbitMQ: " + str(e))
-
-        return JsonResponse(out, safe=False)
+                status_code = 400
+        return JsonResponse(out, safe=False, status=status_code)
 
 @csrf_exempt
 def save_point(request):

@@ -1,6 +1,43 @@
 #!/usr/bin/python
 
+import sys
+
 from pprint import pprint
+from binascii import unhexlify
+
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+def to_bytes(s):
+    '''PY2/PY3 compatible way to convert to something cryptography understands'''
+    if sys.version_info < (3, ):
+        return ''.join(map(chr, s))
+    else:
+        return bytes(s)
+
+def aes128_cmac(AppKey, hex_in):
+    buffer = bytearray(unhexlify(hex_in))
+    key = unhexlify(AppKey)
+    size = len(buffer)
+
+    cipher = Cipher(algorithms.AES(key), modes.ECB(), backend=default_backend())
+
+    encryptor = cipher.encryptor()
+    buffer_encrypted = bytearray(encryptor.update(to_bytes(buffer)) + encryptor.finalize())    
+
+    return ''.join("{:02x}".format(c) for c in buffer_encrypted)
+
+def aes128_decrypt(AppKey, join_accept_hex):
+    buffer = bytearray(unhexlify(join_accept_hex))
+    key = unhexlify(AppKey)
+    size = len(buffer)
+
+    cipher = Cipher(algorithms.AES(key), modes.ECB(), backend=default_backend())
+
+    encryptor = cipher.encryptor()
+    buffer_encrypted = bytearray(encryptor.update(to_bytes(buffer)) + encryptor.finalize())    
+
+    return ''.join("{:02x}".format(c) for c in buffer_encrypted)
 
 AppNonce = ( 1, 2, 3 )
 NetID = ( 1, 2, 3 )
@@ -8,8 +45,23 @@ DevAddr = ( 1, 2, 3, 4 )
 DLSettings = ( 1, )
 RxDelay = ( 1, )
 CFList = ()
+AppKey = 'AABBCCDDEEFFAABBCCDDEEFFAABBCCDD'
 
-join_accept = AppNonce + NetID + DevAddr + DLSettings + RxDelay + CFList
+MHDR = ( 1, )
+
+cmac = aes128_cmac(AppKey, ''.join("{:02x}".format(c) for c in MHDR + AppNonce + NetID + DevAddr + DLSettings + RxDelay + CFList)) 
+pprint(cmac)
+MIC = ''.join(cmac[0], cmac[1], cmac[2], cmac[3])
+pprint(MIC)
+
+join_accept = AppNonce + NetID + DevAddr + DLSettings + RxDelay + CFList + MIC
 
 pprint(join_accept)
+print len(join_accept)
+
+join_accept_hex = ''.join("{:02x}".format(c) for c in join_accept)
+print join_accept_hex
+
+print("AppKey: {}".format(AppKey))
+print aes128_decrypt(AppKey, join_accept_hex)
 

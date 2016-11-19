@@ -3,15 +3,57 @@
 import sys
 import time
 import json
+import CMAC
 import socket
 import struct
 import base64
 import argparse
 import requests
 from pprint import pprint 
+from Crypto.Cipher import AES
 from datetime import datetime
 import paho.mqtt.client as mqtt # mosquitto.py is deprecated
+from binascii import hexlify, unhexlify
 
+def aes128_cmac(key, data):
+    cobj = CMAC.new(key, ciphermod=AES)
+    cobj.update(data)
+    return cobj.digest()[:4]
+
+def aes128_decrypt(key, data):
+    cobj = AES.new(key)
+    return cobj.decrypt(data)
+
+def aes128_encrypt(key, data):
+    cobj = AES.new(key)
+    return cobj.encrypt(data)
+
+def PULL_RESP(data, sock, addr):
+    print("sending PULL_RESP packet out")
+    protocol_version = unhexlify(b'01')
+    random_token = unhexlify(b'0000') # unused in protocol version 1 
+    ident = unhexlify(b'03')  
+    j = {}
+    j['txpk'] = {}
+    j['txpk']['imme'] = True
+    j['txpk']['freq'] = 868.1
+    j['txpk']['rfch'] = 0
+    j['txpk']['powe'] = 14
+    j['txpk']['modu'] = 'LORA'
+    j['txpk']['datr'] = 'SF7BW125'
+    j['txpk']['codr'] = '4/6'
+    j['txpk']['ipol'] = True
+    j['txpk']['size'] = len(data)
+    j['txpk']['data'] = base64.encodestring(data)[:-1]
+    packet = protocol_version + random_token + ident + json.dumps(j, separators=(',', ':'))
+    print(hexlify(packet))
+    print("Sending to: ", addr)
+    sock.sendto(packet, addr)
+    return packet
+
+def pad16(data):
+    # zarovna data na 16 bajtov nulami
+    return data + bytes([0x00]) * (16 - len(data) % 16)
 
 parser = argparse.ArgumentParser(description='Semtech LoRaWAN packet forwarder listener')
 parser.add_argument('-v', '--verbose', action='store_true', help='Be verbose')
@@ -33,6 +75,8 @@ mqttc = mqtt.Client(client_id="ioana", protocol=mqtt.MQTTv31)
 mqttc.connect("127.0.0.1", 1883, 60)
 mqttc.loop_start()
 
+a = 0
+
 while True:
     data, addr = sock.recvfrom(4000)
     dt = datetime.now()
@@ -46,6 +90,7 @@ while True:
     info['packet_type_human'] = packet_types[struct.unpack("B", data[3])[0]]
     info['gateway_mac_ident'] = "".join("{:02x}".format(ord(c)) for c in data[4:12]) 
 
+
     if 'PKT_PULL_DATA' in info['packet_type_human']:
         print("PKT_PULL_DATA packet...we respond with PULL_ACK")
         mqttc.publish("iot", "PKT_PULL_DATA packet...we respond with PULL_ACK")
@@ -54,26 +99,28 @@ while True:
         pull_ack.append(ord(data[1]))
         pull_ack.append(ord(data[2]))
         pull_ack.append(0x04)
+        gw_address = addr
         sock.sendto("".join(chr(c) for c in pull_ack), addr)
-        continue
+
 
     try:
         info['i'] = json.loads("".join("{:02x}".format(ord(c)) for c in data[12:]).decode('hex'))
     except Exception as e:
-        pprint(info)
         print("ERROR: Unable to load JSON from packet...skipping")
         mqttc.publish("iot", "ERROR: Unable to load JSON from packet...skipping")
-        continue 
+#        continue
 
-    if 'stat' in info['i']:
-        print("Gateway status packet...skipping")
-        mqttc.publish("iot", "Gateway status packet...skipping")
-        #pprint(info['i'])
+#    if 'stat' in info['i']:
+#        print("Gateway status packet...skipping")
+#        mqttc.publish("iot", "Gateway status packet...skipping")
+#        #pprint(info['i'])
+#        continue
+
+    try:
+        info['i']['rxpk']
+    except Exception as e:
+        print("Unknown packet - skipping", addr)
         continue
-
-    print(str(dt.isoformat("T")) + " received packet from forwarder (protocol version " + str(info['protocol_version']) + "). Packet type: " + info['packet_type_human'])
-    mqttc.publish("iot", str(dt.isoformat("T")) + " received packet from forwarder (protocol version " + str(info['protocol_version']) + "). Packet type: " + info['packet_type_human'])
-    pprint(info)
 
     if 'rxpk' in info['i']:
         '''The 'data' payload is actually a PHYPayload from LoRaWAN spec.
@@ -109,6 +156,22 @@ while True:
             print("AppEUI:   " + "".join("{:02x}".format(c) for c in AppEUI))
             print("DevEUI:   " + "".join("{:02x}".format(c) for c in DevEUI))
             print("DevNonce: " + "".join("{:02x}".format(c) for c in DevNonce))
+            print("MIC:      " + "".join("{:02x}".format(c) for c in MIC))
+            # assemble join-accept message
+            AppKey = unhexlify(b"00112233445566778899AABBCCDDEEFF")
+            jaMHDR = unhexlify(b"20")
+            jaAppNonce = unhexlify(b"112233")
+            jaNetID = unhexlify(b"010203")
+            jaDevAddr = unhexlify(b"01020304")
+            jaDLSettings = unhexlify(b"00")
+            jaRXDelay = unhexlify(b"00")
+            jaPacketPlain = jaAppNonce + jaNetID + jaDevAddr + jaDLSettings + jaRXDelay
+            jaMIC = aes128_cmac(AppKey, jaMHDR + jaPacketPlain) 
+            print("jaMIC: ", jaMIC)
+            print("jaPacketPlain:  ", jaPacketPlain)
+            jaPacketToSend = jaMHDR + aes128_decrypt(AppKey, jaPacketPlain + jaMIC) + jaMIC
+            print('jaPacketToSend: ', hexlify(jaPacketToSend)) 
+            PULL_RESP(jaPacketToSend, sock, gw_address) 
             continue
 
         try:
