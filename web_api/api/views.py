@@ -288,12 +288,16 @@ def user_info(request, username):
     out = { 'name': user.username, 'nodes': [] }
 
     for node in Node.objects.filter(owner = user).order_by('name'):
+        if (node.last_rawpoint == None):
+            last_rawpoint = "2000-11-11 11:11:11+00:00"
+        else:
+            last_rawpoint = str(node.last_rawpoint)
         out['nodes'].append({
             'name': node.name,
             'type': node.nodetype.name,
             'id': node.node_id,
             'api_key': node.api_key,
-            'last_rawpoint': str(node.last_rawpoint),
+            'last_rawpoint': last_rawpoint,
         }) 
 
     pretty_json = json.dumps(out, indent=4)
