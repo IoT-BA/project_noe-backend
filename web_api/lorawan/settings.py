@@ -79,6 +79,9 @@ DATABASES = {
         'USER': 'iot',
         'PASSWORD': 'SmBYWmfaeVyspqfa',
         'HOST': os.environ['DB_HOST'],
+        'OPTIONS': {
+            'connect_timeout': 30,
+        }
     }
 }
 
