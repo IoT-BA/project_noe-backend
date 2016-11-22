@@ -77,7 +77,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'iot',
         'USER': 'iot',
-        'PASSWORD': 'SmBYWmfaeVyspqfa',
+        'PASSWORD': 'iot',
         'HOST': os.environ['DB_HOST'],
     }
 }
