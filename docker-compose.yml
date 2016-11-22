@@ -3,10 +3,10 @@ services:
   mariadb:
     image: mariadb
     environment:
-      - MYSQL_ROOT_PASSWORD=iot
+      - MYSQL_ROOT_PASSWORD=SmBYWmfaeVyspqfa
       - MYSQL_DATABASE=iot
       - MYSQL_USER=iot
-      - MYSQL_PASSWORD=iot
+      - MYSQL_PASSWORD=SmBYWmfaeVyspqfa
     ports:
         - "3333/tcp:3306/tcp"
   lorawan-sk-backend:
