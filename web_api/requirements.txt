@@ -2,3 +2,4 @@ Django
 mysqlclient
 pytz
 python-lora
+python-dateutil
