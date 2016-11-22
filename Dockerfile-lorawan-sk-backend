@@ -4,9 +4,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends postgresql-clie
 
 WORKDIR /opt/
 RUN git clone https://github.com/lorawan-sk/lorawan-sk-backend.git
-WORKDIR /opt/lorawan-sk-backend/
-RUN pip install -r requirements.txt
 
 WORKDIR /opt/lorawan-sk-backend/web_api/
+RUN pip install -r requirements.txt
+
 EXPOSE 8888
 #CMD ["python", "manage.py", "runserver", "0.0.0.0:8888"]
