@@ -14,7 +14,7 @@ services:
       context: .
       dockerfile: Dockerfile-lorawan-sk-backend
     container_name: lorawan-sk-backend
-    command: python manage.py runserver 0.0.0.0:8888 --verbosity 3
+    command: ./start.sh
     ports:
         - "8888/tcp:8888/tcp"
     links:

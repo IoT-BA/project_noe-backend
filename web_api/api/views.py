@@ -2,7 +2,6 @@ import csv
 import json
 import time
 import pytz
-import pika
 import base64
 import struct
 from lora.crypto import loramac_decrypt
