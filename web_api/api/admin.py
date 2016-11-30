@@ -10,7 +10,7 @@ from api.models import LoRaWANRawPoint
 from api.models import LoRaWANApplication 
 
 class GatewayAdmin(admin.ModelAdmin):
-    list_display = ('id', 'description', 'owner', 'serial', 'location')
+    list_display = ('id', 'mac', 'owner', 'serial', 'location')
 
 class RawpointAdmin(admin.ModelAdmin):
     list_display = ('id', 'seq_number', 'timestamp', 'payload', 'rssi', 'snr', 'node_id', 'gw', 'gateway_serial', 'state')

@@ -404,6 +404,45 @@ def points_all_nodes_key(request, key_numeric):
             })
         return JsonResponse(out, safe=False)
 
+@csrf_exempt
+def gw_register(request, gw_mac):
+    if request.method == 'POST':
+        out = {
+            'serial': 'b827ebfffed1fcc2',
+            'mac': gw_mac
+        }
+    else:
+        pretty_json = json.dumps({ 'error': 'GET call does not exist on this URI - try POST request' }, indent=4)
+        response = HttpResponse(pretty_json, content_type="application/json",  status=400)
+        response['Access-Control-Allow-Origin'] = '*'
+        return response
+
+    pretty_json = json.dumps(out, indent=4)
+    response = HttpResponse(pretty_json, content_type="application/json")
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
+def gw_info(request, gw_serial):
+    if request.method == 'GET':
+        try:
+            gw = Gateway.objects.get(serial = gw_serial)
+        except Exception as e:
+            pretty_json = json.dumps({ 'error': 'no such gateway in the database', "gw_serial": gw_serial }, indent=4)
+            response = HttpResponse(pretty_json, content_type="application/json",  status=400)
+            response['Access-Control-Allow-Origin'] = '*'
+            return response
+        out = {
+            'id': gw.id,
+            'serial': gw.serial,
+            'mac': gw.mac,
+            'description': gw.description,
+        }
+
+    pretty_json = json.dumps(out, indent=4)
+    response = HttpResponse(pretty_json, content_type="application/json")
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
 def node_info(request, node_api_key):
     if request.method == 'GET':
         n = Node.objects.get(api_key = node_api_key)

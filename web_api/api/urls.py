@@ -4,6 +4,8 @@ from . import views
 
 urlpatterns = [
     url(r'^$', views.index),
+    url(r'^gw/info/([0-9a-zA-Z]+)/?$', views.gw_info),
+    url(r'^gw/register/([0-9a-zA-Z]+)/?$', views.gw_register),
     url(r'^node/([0-9a-zA-Z]+)/?$', views.node_info),
     url(r'^rssi/([0-9a-zA-Z]+)/?$', views.rssi_this_node),
     url(r'^user/([0-9a-zA-Z\._]+)/?$', views.user_info),

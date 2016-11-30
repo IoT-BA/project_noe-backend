@@ -10,6 +10,7 @@ class Gateway(models.Model):
     gps_lon = models.FloatField(default=0.0, blank=True)
     gps_lat = models.FloatField(default=0.0, blank=True)
     serial = models.CharField(max_length=128, default="", blank=True)
+    mac = models.CharField(max_length=12, default="", blank=True)
     lorawan_band = models.IntegerField(choices=((0, 'EU863-870'), (1, 'US902-928'), (2, 'CN779-787'), (3, 'EU433')), null=True, blank=True)
 
 class Key(models.Model):
