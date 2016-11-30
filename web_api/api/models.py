@@ -1,5 +1,12 @@
+import random
+import string
+
 from django.db import models
 from django.contrib.auth.models import User
+
+def generate_api_key():
+    api_key = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(16))
+    return str(api_key)
 
 class Gateway(models.Model):
     def __unicode__(self):
@@ -31,17 +38,17 @@ class LoRaWANApplication(models.Model):
          return self.name + " (" + self.AppEUI + ")"
     name = models.CharField(max_length=128)
     AppEUI = models.CharField(max_length=128)
-    api_key = models.CharField(max_length=256, null=True, blank=True)
+    api_key = models.CharField(max_length=256, null=True, blank=True, default=generate_api_key)
 
 class Node(models.Model):
     def __unicode__(self):
          return str(self.node_id) + " - " + str(self.api_key)
     id = models.AutoField(primary_key = True)
     node_id = models.CharField(max_length=256, null=True)
-    api_key = models.CharField(max_length=256, null=False, blank=False)
+    api_key = models.CharField(max_length=256, null=False, blank=False, default=generate_api_key)
     name = models.CharField(max_length=128, default="")
     location = models.CharField(max_length=512, default="")
-    description = models.TextField()
+    description = models.TextField(null=True, blank=True)
     owner = models.ForeignKey(User)
     nodetype = models.ForeignKey(NodeType, null=False, blank=False)
     gps_lon = models.FloatField(default=0.0)
@@ -116,4 +123,5 @@ class UserExt(models.Model):
         max_length=256,
         null=True,
         blank=True,
+        default = generate_api_key,
     )
