@@ -6,7 +6,7 @@ import base64
 import struct
 from lora.crypto import loramac_decrypt
 
-from api.models import User, UserExt, Gateway, LoRaWANRawPoint, Rawpoint, Point, Node, Key
+from api.models import User, NodeType, UserExt, Gateway, LoRaWANRawPoint, Rawpoint, Point, Node, Key
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
@@ -507,45 +507,81 @@ def save_rawpoint(request):
     out = []
     status_code = 200
 
-    if request.method == 'POST':
-        pprint(request.body)
-        data = json.loads(request.body)
-        for d in data:
-            try: 
-                point = Rawpoint()
-                point.payload = d['payload']
-                #point.gw = Gateway.objects.get(serial = d['gateway_serial']) 
-                try:
-                    point.gateway_serial = d['gateway_serial']
-                except Exception as e:
-                    pass
+    if request.method != 'POST':
+        pretty_json = json.dumps({ 'error': str(request.method) + ' call does not exist on this URI' }, indent=4)
+        response = HttpResponse(pretty_json, content_type="application/json",  status=400)
+        response['Access-Control-Allow-Origin'] = '*'
+        return response
 
+    try:
+        data = json.loads(request.body)
+    except Exception as e:
+        out = { 'satus': 3, 'status': str(e.args), 'status_explain': 'unable to parse json from POST payload' }
+        status_code = 400
+        return JsonResponse(out, safe=False, status=status_code)
+
+    i = 0
+    for d in data:
+        i = i + 1
+        try: 
+            point = Rawpoint()
+            point.payload = d['payload']
+            #point.gw = Gateway.objects.get(serial = d['gateway_serial']) 
+            try:
+                point.gateway_serial = d['gateway_serial']
+            except Exception as e:
+                pass
+
+            try:
                 node = Node.objects.get(node_id = d['node_id'])
                 node.last_rawpoint = timezone.now()
                 node.save()
-
-                point.node = node
-                point.rssi = d['rssi'] 
-                try:
-                    point.seq_number = d['seq_number'] 
-                except Exception as e:
-                    point.seq_number = None 
-                try:
-                    d['snr']
-                    point.snr = d['snr'] 
-                except Exception as e:
-                    point.snr = None 
-                point.timestamp = datetime.fromtimestamp(d['timestamp'], pytz.utc)
-                point.save()
-                out.append({ 'rowid': d['rowid'], 'status': 1 })
             except Exception as e:
-                out.append({
-                             'status': 2,
-                             'status_explain': str(e),
-                             'row': d
-                          })
-                status_code = 400
-        return JsonResponse(out, safe=False, status=status_code)
+                print("Creating new Node with node_id " + d['node_id'])
+                node = Node(
+                             node_id = d['node_id'],
+                             nodetype = NodeType.objects.get(name = 'unknown'),
+                             owner = User.objects.get(username = 'unclaimed')
+                       )
+                node.last_rawpoint = timezone.now()
+                node.save()
+
+            point.node = node
+
+            try:
+                d['rssi']
+                point.rssi = d['rssi'] 
+            except Exception as e:
+                point.rssi = None
+
+            try:
+                point.seq_number = d['seq_number'] 
+            except Exception as e:
+                point.seq_number = None 
+
+            try:
+                d['snr']
+                point.snr = d['snr'] 
+            except Exception as e:
+                point.snr = None 
+
+            try:
+                d['rowid']
+            except Exception as e:
+                d['rowid'] = i
+
+            point.timestamp = datetime.fromtimestamp(d['timestamp'], pytz.utc)
+            point.save()
+            out.append({ 'rowid': d['rowid'], 'status': 1, 'status_human': 'OK' })
+        except Exception as e:
+            out.append({
+                         'status': 2,
+                         'status_explain': str(e.args),
+                         'point_data': d,
+                         'rowid': i
+                      })
+            status_code = 400
+    return JsonResponse(out, safe=False, status=status_code)
 
 @csrf_exempt
 def save_point(request):
