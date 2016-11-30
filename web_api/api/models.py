@@ -118,10 +118,12 @@ class Point(models.Model):
         db_table = 'parsed_data'
 
 class UserExt(models.Model):
+    def __unicode__(self):
+        return str(self.user_api_key)
     user = models.OneToOneField(User) 
     user_api_key = models.CharField(
         max_length=256,
-        null=True,
-        blank=True,
+        null=False,
+        blank=False,
         default = generate_api_key,
     )
