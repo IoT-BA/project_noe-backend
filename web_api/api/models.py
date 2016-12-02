@@ -1,5 +1,6 @@
 import random
 import string
+import uuid
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -12,7 +13,7 @@ def generate_api_key():
 class Gateway(models.Model):
     def __unicode__(self):
          return str(self.id) + " - " + self.description
-    description = models.CharField(max_length=128)
+    description = models.TextField(null=True, blank=True)
     owner = models.ForeignKey(User)
     location = models.CharField(max_length=512, default="", blank=True)
     gps_lon = models.FloatField(default=0.0, blank=True)
@@ -39,14 +40,14 @@ class LoRaWANApplication(models.Model):
          return self.name + " (" + self.AppEUI + ")"
     name = models.CharField(max_length=128)
     AppEUI = models.CharField(max_length=128)
-    api_key = models.CharField(max_length=256, null=True, blank=True, default=generate_api_key)
+    api_key = models.UUIDField(default=uuid.uuid4, unique=True) 
 
 class Node(models.Model):
     def __unicode__(self):
          return str(self.node_id) + " - " + str(self.api_key)
     id = models.AutoField(primary_key = True)
-    node_id = models.CharField(max_length=256, null=True)
-    api_key = models.CharField(max_length=256, null=False, blank=False, default=generate_api_key)
+    node_id = models.CharField(max_length=255, null=True, unique=True)
+    api_key = models.CharField(max_length=20, null=False, blank=False, unique=True, default=generate_api_key)
     name = models.CharField(max_length=128, null=False, blank=False)
     location = models.CharField(max_length=512, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
