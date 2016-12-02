@@ -121,7 +121,7 @@ class Point(models.Model):
 class Profile(models.Model):
     def __unicode__(self):
         return str(self.user_api_key)
-    phone_regex = RegexValidator(regex=r'^\+\d{9,15}$', message="Phone number must be entered in the format: '+123456789'. With 9 to 15 digits.")
+    phone_regex = RegexValidator(regex=r'^\+\d{8,15}$', message="Phone number must be entered in the format: '+12345678'. With 8 to 15 digits.")
     phone_number = models.CharField(max_length=16, validators=[phone_regex], null=True, blank=True)
     user = models.OneToOneField(User) 
     user_api_key = models.CharField(
