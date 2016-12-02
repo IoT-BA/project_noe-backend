@@ -6,7 +6,7 @@ import base64
 import struct
 from lora.crypto import loramac_decrypt
 
-from api.models import User, NodeType, UserExt, Gateway, LoRaWANRawPoint, Rawpoint, Point, Node, Key
+from api.models import User, NodeType, Profile, Gateway, LoRaWANRawPoint, Rawpoint, Point, Node, Key
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
@@ -33,7 +33,7 @@ def user_login(request):
             if user.is_active:
                 login(request, user)
                 out = {
-                          'user_access_key': str(user.userext.user_api_key),
+                          'user_access_key': str(user.profile.user_api_key),
                           'login': 'ok',
                       }
                 pretty_json = json.dumps(out, indent=4)
@@ -312,12 +312,20 @@ def users(request):
     for user in User.objects.all().order_by('username'):
         u = {
             'name': user.username,
+            'email': user.email,
             'nodes': [],
         }
+
         try:
-            u['user_api_key'] = user.userext.user_api_key
+            u['user_api_key'] = user.profile.user_api_key
         except Exception as e:
             u['user_api_key'] = "" 
+
+        try:
+            u['phone'] = user.profile.phone
+        except Exception as e:
+            u['phone'] = "" 
+
         for node in Node.objects.filter(owner = user):
             u['nodes'].append({ 'name': node.name, 'api_key': node.api_key }) 
         out['users'].append(u)

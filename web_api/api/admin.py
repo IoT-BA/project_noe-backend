@@ -1,13 +1,23 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
+
 from api.models import Gateway
 from api.models import Point 
 from api.models import Node 
 from api.models import NodeType
 from api.models import Key
 from api.models import Rawpoint
-from api.models import UserExt
+from api.models import Profile 
 from api.models import LoRaWANRawPoint 
 from api.models import LoRaWANApplication 
+
+class ProfileInline(admin.StackedInline):
+    model = Profile
+    can_delete = False
+
+class UserAdmin(BaseUserAdmin):
+    inlines = (ProfileInline, )
 
 class GatewayAdmin(admin.ModelAdmin):
     list_display = ('id', 'mac', 'owner', 'serial', 'location')
@@ -38,6 +48,7 @@ admin.site.register(NodeType)
 admin.site.register(Key, KeyAdmin)
 admin.site.register(Point, PointAdmin)
 admin.site.register(Rawpoint, RawpointAdmin)
-admin.site.register(UserExt)
+admin.site.unregister(User)
+admin.site.register(User, UserAdmin)
 admin.site.register(LoRaWANRawPoint, LoRaWANRawPointAdmin)
 admin.site.register(LoRaWANApplication)
