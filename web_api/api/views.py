@@ -322,7 +322,7 @@ def users(request):
             u['user_api_key'] = "" 
 
         try:
-            u['phone'] = user.profile.phone
+            u['phone'] = user.profile.phone_number
         except Exception as e:
             u['phone'] = "" 
 
