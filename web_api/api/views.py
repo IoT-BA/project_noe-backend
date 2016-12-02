@@ -225,6 +225,23 @@ def nodes(request):
     response['Access-Control-Allow-Origin'] = '*'
     return response
 
+def gws_list(request):
+    ''' List of all Gateways '''
+
+    out = { 'gws': [] }
+
+    for gw in Gateway.objects.all().order_by('description'):
+        out['gws'].append({
+            'description': gw.description,
+            'serial': gw.serial,
+            'owner': gw.owner.username,
+        })
+
+    pretty_json = json.dumps(out, indent=4)
+    response = HttpResponse(pretty_json, content_type="application/json")
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
+
 def lorawan_points_all(request):
     ''' All LoRaWAN raw points, but try to decrypt them '''
 
