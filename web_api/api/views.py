@@ -238,6 +238,8 @@ def gws_list(request):
             'serial': gw.serial,
             'owner': gw.owner.username,
             'last_seen': str(gw.last_seen),
+            'gps_lon': gw.gps_lon,
+            'gps_lat': gw.gps_lat,
         })
 
     pretty_json = json.dumps(out, indent=4)
@@ -364,29 +366,33 @@ def gis(request):
         'features': []
     }
     for gw in Gateway.objects.all():
+        if (gw.gps_lon == 0) or (gw.gps_lat == 0):
+            continue
         out['features'].append({
             'type': 'Feature',
             'geometry': {
                 'type': 'Point',
-                'coordinates': [ gw.gps_lat, gw.gps_lon ],
+                'coordinates': [ gw.gps_lon, gw.gps_lat ],
             },
             'properties': {
-                'name': gw.description,
-                'address': gw.location,
+                'name': str(gw.description) + " ID: " +  str(gw.id),
+                'address': str(gw.location),
                 'gps_lon': gw.gps_lon,
                 'gps_lat': gw.gps_lat,
-                'type': 'gateway'
+                'type': 'gateway',
+                'last_seen': str(gw.last_seen),
             }
         })
     for node in Node.objects.all():
+        continue
         out['features'].append({
             'type': 'Feature',
             'geometry': {
                 'type': 'Point',
-                'coordinates': [ node.gps_lat, node.gps_lon ],
+                'coordinates': [ node.gps_lon, node.gps_lat ],
             },
             'properties': {
-                'name': node.description,
+                'name': str(node.description),
                 'address': node.location,
                 'node_id': node.node_id,
                 'type': 'node',
@@ -555,6 +561,8 @@ def gw_update(request):
     else:
         print("Gateway found with ID: " + str(gw.id))
 
+    gw.gps_lon = d['longitude']
+    gw.gps_lat = d['latitude']
     gw.last_seen = timezone.now()
     gw.save()
 

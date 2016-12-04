@@ -20,7 +20,7 @@ class UserAdmin(BaseUserAdmin):
     inlines = (ProfileInline, )
 
 class GatewayAdmin(admin.ModelAdmin):
-    list_display = ('id', 'mac', 'owner', 'serial', 'location')
+    list_display = ('id', 'mac', 'owner', 'serial', 'location', 'gps_lon', 'gps_lat')
 
 class RawpointAdmin(admin.ModelAdmin):
     list_display = ('id', 'seq_number', 'timestamp', 'payload', 'rssi', 'snr', 'node_id', 'gw', 'gateway_serial', 'state')
