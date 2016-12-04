@@ -12,15 +12,16 @@ def generate_api_key():
 
 class Gateway(models.Model):
     def __unicode__(self):
-         return str(self.id) + " - " + self.description
+         return str(self.id) + " - " + str(self.description)
     description = models.TextField(null=True, blank=True)
     owner = models.ForeignKey(User)
     location = models.CharField(max_length=512, default="", blank=True)
     gps_lon = models.FloatField(default=0.0, blank=True)
     gps_lat = models.FloatField(default=0.0, blank=True)
-    serial = models.CharField(max_length=128, default="", blank=True)
-    mac = models.CharField(max_length=12, default="", blank=True)
+    serial = models.CharField(max_length=128, default=generate_api_key, blank=True)
+    mac = models.CharField(max_length=30, null=True, blank=True)
     lorawan_band = models.IntegerField(choices=((0, 'EU863-870'), (1, 'US902-928'), (2, 'CN779-787'), (3, 'EU433')), null=True, blank=True)
+    last_seen = models.DateTimeField(null=True, blank=True)
 
 class Key(models.Model):
     def __unicode__(self):

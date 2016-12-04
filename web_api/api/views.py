@@ -7,15 +7,17 @@ import struct
 from lora.crypto import loramac_decrypt
 
 from api.models import User, NodeType, Profile, Gateway, LoRaWANRawPoint, Rawpoint, Point, Node, Key
-from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse, JsonResponse
-from django.utils import timezone
-from datetime import datetime
-import dateutil.parser
-from pprint import pprint
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
+from django.core import serializers
+from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+
+from datetime import datetime
+import dateutil.parser
+from pprint import pprint
 
 def index(request):
     return HttpResponse("Not much to see here mate!")
@@ -235,6 +237,7 @@ def gws_list(request):
             'description': gw.description,
             'serial': gw.serial,
             'owner': gw.owner.username,
+            'last_seen': str(gw.last_seen),
         })
 
     pretty_json = json.dumps(out, indent=4)
@@ -525,9 +528,41 @@ def rawpoints(request):
             return HttpResponse(pretty_json, content_type="application/json")
 
 @csrf_exempt
+def gw_update(request):
+
+    if request.method != 'POST':
+        pretty_json = json.dumps({ 'error': str(request.method) + ' call does not exist on this URI' }, indent=4)
+        response = HttpResponse(pretty_json, content_type="application/json",  status=400)
+        response['Access-Control-Allow-Origin'] = '*'
+        return response
+
+    try:
+        d = json.loads(request.body)
+    except Exception as e:
+        out = { 'satus': 1, 'status': str(e.args), 'status_explain': 'unable to parse json from POST payload' }
+        status_code = 400
+        return JsonResponse(out, safe=False, status=status_code)
+
+    try:
+        gw = Gateway.objects.get(mac = d['mac'])
+    except Exception as e:
+        print("Error: " + str(e))
+        print("Creating new Gateway with MAC " + d['mac'])
+        gw = Gateway(
+                     mac = d['mac'],
+                     owner = User.objects.get(username = 'unclaimed')
+                    )
+    else:
+        print("Gateway found with ID: " + str(gw.id))
+
+    gw.last_seen = timezone.now()
+    gw.save()
+
+    out = { 'satus': 1, 'gw_mac': gw.mac, 'gw_serial': gw.serial }
+    return JsonResponse(out, safe=False, status=200)
+
+@csrf_exempt
 def save_rawpoint(request):
-    from datetime import datetime 
-    from django.core import serializers
 
     out = []
     status_code = 200
