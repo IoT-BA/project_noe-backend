@@ -326,7 +326,7 @@ def user_info(request, username):
             'last_rawpoint': last_rawpoint,
         }) 
 
-    for node in Node.objects.filter(users = user).order_by('name'):
+    for node in Node.objects.filter(owner = user).order_by('name'):
         if (node.last_rawpoint == None):
             last_rawpoint = "2000-11-11 11:11:11+00:00"
         else:
