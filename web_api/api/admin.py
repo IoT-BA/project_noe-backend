@@ -14,10 +14,10 @@ from api.models import LoRaWANApplication
 
 class ProfileInline(admin.StackedInline):
     model = Profile
-    can_delete = False
+    show_change_link = True
 
 class UserAdmin(BaseUserAdmin):
-    inlines = (ProfileInline, )
+    inlines = ( ProfileInline, )
 
 class GatewayAdmin(admin.ModelAdmin):
     list_display = ('id', 'mac', 'owner', 'serial', 'location', 'gps_lon', 'gps_lat')

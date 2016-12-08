@@ -306,7 +306,11 @@ def user_info(request, username):
 
     user = User.objects.get(username = username)
 
-    out = { 'name': user.username, 'nodes': [] }
+    out = {
+            'name': user.username,
+            'nodes': [],
+            'gws': [],
+          }
 
     for node in Node.objects.filter(owner = user).order_by('name'):
         if (node.last_rawpoint == None):
@@ -319,6 +323,14 @@ def user_info(request, username):
             'id': node.node_id,
             'api_key': node.api_key,
             'last_rawpoint': last_rawpoint,
+        }) 
+
+    for gw in Gateway.objects.filter(owner = user).order_by('mac'):
+        out['gws'].append({
+            'mac': gw.mac,
+            'serial': gw.serial,
+            'last_seen': str(gw.last_seen),
+            'position': { 'lon': gw.gps_lon, 'lat': gw.gps_lat },
         }) 
 
     pretty_json = json.dumps(out, indent=4)
@@ -470,6 +482,8 @@ def gw_info(request, gw_serial):
             'serial': gw.serial,
             'mac': gw.mac,
             'description': gw.description,
+            'owner': { 'username': gw.owner.username }, 
+            'last_seen': str(gw.last_seen),
         }
 
     pretty_json = json.dumps(out, indent=4)
@@ -594,7 +608,12 @@ def save_rawpoint(request):
         try: 
             point = Rawpoint()
             point.payload = d['payload']
-            #point.gw = Gateway.objects.get(serial = d['gateway_serial']) 
+
+            try:
+                point.gw = Gateway.objects.get(mac = d['gw_mac']) 
+            except Exception as e:
+                pass
+
             try:
                 point.gateway_serial = d['gateway_serial']
             except Exception as e:
