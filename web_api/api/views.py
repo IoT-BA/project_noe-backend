@@ -309,15 +309,29 @@ def user_info(request, username):
     out = {
             'name': user.username,
             'nodes': [],
+            'nodes_own': [],
             'gws': [],
           }
 
-    for node in Node.objects.filter(owner = user).order_by('name'):
+    for node in Node.objects.filter(users = user).order_by('name'):
         if (node.last_rawpoint == None):
             last_rawpoint = "2000-11-11 11:11:11+00:00"
         else:
             last_rawpoint = str(node.last_rawpoint)
         out['nodes'].append({
+            'name': node.name,
+            'type': node.nodetype.name,
+            'id': node.node_id,
+            'api_key': node.api_key,
+            'last_rawpoint': last_rawpoint,
+        }) 
+
+    for node in Node.objects.filter(users = user).order_by('name'):
+        if (node.last_rawpoint == None):
+            last_rawpoint = "2000-11-11 11:11:11+00:00"
+        else:
+            last_rawpoint = str(node.last_rawpoint)
+        out['nodes_own'].append({
             'name': node.name,
             'type': node.nodetype.name,
             'id': node.node_id,
