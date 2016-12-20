@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
 
 def generate_api_key():
-    api_key = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(16))
+    api_key = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(32))
     return str(api_key)
 
 class Gateway(models.Model):
