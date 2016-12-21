@@ -335,7 +335,7 @@ def user_info(request, username):
         out['nodes_own'].append({
             'name': node.name,
             'type': node.nodetype.name,
-            'id': node.node_id,
+            'node_id': node.node_id,
             'api_key': node.api_key,
             'last_rawpoint': last_rawpoint,
         }) 
