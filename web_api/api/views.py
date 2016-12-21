@@ -220,6 +220,7 @@ def nodes(request):
             'name': node.name,
             'description': node.description,
             'api_key': node.api_key,
+            'owner': node.owner.username,
         })
 
     pretty_json = json.dumps(out, indent=4)
