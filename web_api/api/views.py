@@ -6,7 +6,7 @@ import base64
 import struct
 from lora.crypto import loramac_decrypt
 
-from api.models import User, NodeType, Profile, Gateway, LoRaWANRawPoint, Rawpoint, Point, Node, Key
+from api.models import LoRaWANApplication, User, NodeType, Profile, Gateway, LoRaWANRawPoint, Rawpoint, Point, Node, Key
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
@@ -122,6 +122,7 @@ def rawpoints_this_node(request, node_api_key):
                 sequenced_points = sequenced_points + 1
             out['dataset'].append({
                 'payload': p.payload,
+                'gateway_serial': p.gateway_serial,
                 'seq_number': p.seq_number,
                 'datetime': str(p.timestamp),
                 'timestamp': (p.timestamp.replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds(),
@@ -216,12 +217,19 @@ def nodes(request):
     out = { 'nodes': [] }
 
     for node in Node.objects.all().order_by('name'):
-        out['nodes'].append({
+        this_node = {
             'name': node.name,
             'description': node.description,
             'api_key': node.api_key,
             'owner': node.owner.username,
-        })
+            'node_id': node.node_id,
+        }
+
+        if node.lorawan_application:
+            lorawan = { 'AppEUI': node.lorawan_application.AppEUI }
+            this_node['lorawan'] = lorawan
+
+        out['nodes'].append(this_node)
 
     pretty_json = json.dumps(out, indent=4)
     response = HttpResponse(pretty_json, content_type="application/json")

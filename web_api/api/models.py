@@ -40,7 +40,8 @@ class LoRaWANApplication(models.Model):
     def __unicode__(self):
          return self.name + " (" + self.AppEUI + ")"
     name = models.CharField(max_length=128)
-    AppEUI = models.CharField(max_length=128)
+    AppEUI = models.CharField(max_length=128, null=False, blank=False)
+    AppKey   = models.CharField(max_length=128, null=False, blank=False)
     api_key = models.UUIDField(default=uuid.uuid4, unique=True) 
 
 class Node(models.Model):
@@ -59,11 +60,6 @@ class Node(models.Model):
     gps_lat = models.FloatField(default=0.0)
     last_rawpoint = models.DateTimeField(null=True, blank=True)
     lorawan_application = models.ForeignKey(LoRaWANApplication, null=True, blank=True)
-    lorawan_DevEUI   = models.CharField(max_length=128, null=True, blank=True)
-    lorawan_NwkSKey  = models.CharField(max_length=128, null=True, blank=True)
-    lorawan_AppSKey  = models.CharField(max_length=128, null=True, blank=True)
-    lorawan_FCntUp   = models.IntegerField(default=0)
-    lorawan_FCntDown = models.IntegerField(default=0)
 
 class Rawpoint(models.Model):
     def __unicode__(self):
