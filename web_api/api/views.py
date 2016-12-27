@@ -226,13 +226,16 @@ def nodes(request):
         }
 
         if node.lorawan_application:
-            lorawan = { 'AppEUI': node.lorawan_application.AppEUI }
+            lorawan = {
+                        'AppEUI': node.lorawan_application.AppEUI,
+                        'AppKey': node.lorawan_application.AppKey,
+                      }
             this_node['lorawan'] = lorawan
 
         out['nodes'].append(this_node)
 
     pretty_json = json.dumps(out, indent=4)
-    response = HttpResponse(pretty_json, content_type="application/json")
+    response = HttpResponse(pretty_json, content_type="application/json; charset=utf8")
     response['Access-Control-Allow-Origin'] = '*'
     return response
 
