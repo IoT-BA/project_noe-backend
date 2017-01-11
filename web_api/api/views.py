@@ -479,16 +479,27 @@ def points_all_nodes_key(request, key_numeric):
 
 @csrf_exempt
 def gw_register(request, gw_mac):
-    if request.method == 'POST':
-        out = {
-            'serial': 'b827ebfffed1fcc2',
-            'mac': gw_mac
-        }
-    else:
-        pretty_json = json.dumps({ 'error': 'GET call does not exist for this URI - try POST request' }, indent=4)
+    if request.method != 'GET':
+        pretty_json = json.dumps({ 'error': 'POST call does not exist for this URI - try GET request' }, indent=4)
         response = HttpResponse(pretty_json, content_type="application/json",  status=400)
         response['Access-Control-Allow-Origin'] = '*'
         return response
+
+    try:
+        gw = Gateway.objects.get(mac = gw_mac)
+    except Exception as e:
+        print("Error: " + str(e))
+        print("Creating new Gateway with MAC " + gw_mac)
+        gw = Gateway(
+                      mac = gw_mac,
+                      owner = User.objects.get(username = 'unclaimed'),
+                    )
+        gw.save()
+
+    out = {
+            'serial': gw.serial,
+            'mac': gw.mac,
+          }
 
     pretty_json = json.dumps(out, indent=4)
     response = HttpResponse(pretty_json, content_type="application/json")
@@ -578,7 +589,7 @@ def rawpoints(request):
 def gw_update(request):
 
     if request.method != 'POST':
-        pretty_json = json.dumps({ 'error': str(request.method) + ' call does not exist on this URI' }, indent=4)
+        pretty_json = json.dumps({ 'error': str(request.method) + ' call does not exist for this URI' }, indent=4)
         response = HttpResponse(pretty_json, content_type="application/json",  status=400)
         response['Access-Control-Allow-Origin'] = '*'
         return response
@@ -586,7 +597,11 @@ def gw_update(request):
     try:
         d = json.loads(request.body)
     except Exception as e:
-        out = { 'satus': 1, 'status': str(e.args), 'status_explain': 'unable to parse json from POST payload' }
+        out = {
+                'satus': 1,
+                'status': str(e.args),
+                'status_explain': 'unable to parse JSON from POST payload'
+              }
         status_code = 400
         return JsonResponse(out, safe=False, status=status_code)
 
@@ -599,8 +614,6 @@ def gw_update(request):
                      mac = d['mac'],
                      owner = User.objects.get(username = 'unclaimed')
                     )
-    else:
-        print("Gateway found with ID: " + str(gw.id))
 
     gw.gps_lon = d['longitude']
     gw.gps_lat = d['latitude']

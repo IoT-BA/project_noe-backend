@@ -22,6 +22,7 @@ class Gateway(models.Model):
     mac = models.CharField(max_length=64, null=True, blank=True)
     lorawan_band = models.IntegerField(choices=((0, 'EU863-870'), (1, 'US902-928'), (2, 'CN779-787'), (3, 'EU433')), null=True, blank=True)
     last_seen = models.DateTimeField(null=True, blank=True)
+    last_seen_ip = models.CharField(max_length=200, blank=True, null=True)
 
 class Key(models.Model):
     def __unicode__(self):
