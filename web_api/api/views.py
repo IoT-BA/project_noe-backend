@@ -520,7 +520,13 @@ def gw_info(request, gw_serial):
             'serial': gw.serial,
             'mac': gw.mac,
             'description': gw.description,
-            'owner': { 'username': gw.owner.username }, 
+            'owner': {
+                       'username': gw.owner.username,
+                     }, 
+            'mqtt': {
+                      'user':     gw.serial,
+                      'password': gw.serial[::-1],
+                    }, 
             'last_seen': str(gw.last_seen),
         }
 
