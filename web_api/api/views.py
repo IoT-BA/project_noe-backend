@@ -248,6 +248,7 @@ def gws_list(request):
         out['gws'].append({
             'description': gw.description,
             'serial': gw.serial,
+            'mac': gw.mac,
             'owner': gw.owner.username,
             'last_seen': str(gw.last_seen),
             'gps_lon': gw.gps_lon,
@@ -484,7 +485,7 @@ def gw_register(request, gw_mac):
             'mac': gw_mac
         }
     else:
-        pretty_json = json.dumps({ 'error': 'GET call does not exist on this URI - try POST request' }, indent=4)
+        pretty_json = json.dumps({ 'error': 'GET call does not exist for this URI - try POST request' }, indent=4)
         response = HttpResponse(pretty_json, content_type="application/json",  status=400)
         response['Access-Control-Allow-Origin'] = '*'
         return response
