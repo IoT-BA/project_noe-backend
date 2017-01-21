@@ -21,6 +21,7 @@ urlpatterns = [
     url(r'^points/all/([0-9]+)/?$', views.points_all_nodes_key),
     url(r'^points/all/?$', views.points_all_nodes),
     url(r'^rawpoints/save/?$', views.save_rawpoint),
+    url(r'^rawpoints/gw/([0-9a-zA-Z]+)/?$', views.rawpoints_this_gw),
     url(r'^rawpoints/([0-9a-zA-Z]+)/?$', views.rawpoints_this_node),
     url(r'^rawpoints/?$', views.rawpoints),
     url(r'^gis/?$', views.gis),

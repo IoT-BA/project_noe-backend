@@ -85,6 +85,43 @@ def points_this_node(request, node_api_key):
             pretty_json = json.dumps(out, indent=4)
             return HttpResponse(pretty_json, content_type="application/json")
 
+def rawpoints_this_gw(request, gw_serial):
+    if request.method == 'GET':
+        if not request.GET.get('limit'):
+            limit = 100
+        else:
+            limit = request.GET.get('limit')
+
+
+        try:
+            gw = Gateway.objects.get(serial = gw_serial)
+            out = {
+                'dataset': [],
+                'gw': { 
+                    'serial': str(gw.serial),
+                    'mac': str(gw.mac),
+                },
+                'info': {
+                    'api_request_timestamp': str(timezone.now()),
+                    'dataset_size_limit': limit,
+                },
+            }
+            for raw in Rawpoint.objects.filter(gw = gw).order_by('-timestamp')[:limit]:
+                out['dataset'].append({
+                                        'payload': str(raw.payload),
+                                        'timestamp': str(raw.timestamp),
+                                        'node': {
+                                                  'id': str(raw.node.node_id),
+                                                  'api_key': str(raw.node.node_id),
+                                                }
+                                     })
+        except Exception as e:
+            pprint("Gateway with serial " + str(gw_serial) + " does not exist!")
+            return HttpResponse("no such gateway serial found, also: " + str(e), content_type="application/json", status = 500)
+
+        pretty_json = json.dumps(out, indent=4)
+        return HttpResponse(pretty_json, content_type="application/json")
+
 def rawpoints_this_node(request, node_api_key):
     if request.method == 'GET':
         if not request.GET.get('limit'):
@@ -249,6 +286,7 @@ def gws_list(request):
             'description': gw.description,
             'serial': gw.serial,
             'mac': gw.mac,
+            'lorawan_band': str(gw.lorawan_band),
             'owner': gw.owner.username,
             'last_seen': str(gw.last_seen),
             'gps_lon': gw.gps_lon,
@@ -481,7 +519,7 @@ def points_all_nodes_key(request, key_numeric):
 def gw_register(request, gw_mac):
     if request.method != 'GET':
         pretty_json = json.dumps({ 'error': 'POST call does not exist for this URI - try GET request' }, indent=4)
-        response = HttpResponse(pretty_json, content_type="application/json",  status=400)
+        response = HttpResponse(pretty_json, content_type="application/json",  status = 400)
         response['Access-Control-Allow-Origin'] = '*'
         return response
 
@@ -512,7 +550,7 @@ def gw_info(request, gw_serial):
             gw = Gateway.objects.get(serial = gw_serial)
         except Exception as e:
             pretty_json = json.dumps({ 'error': 'no such gateway in the database', "gw_serial": gw_serial }, indent=4)
-            response = HttpResponse(pretty_json, content_type="application/json",  status=400)
+            response = HttpResponse(pretty_json, content_type="application/json",  status = 400)
             response['Access-Control-Allow-Origin'] = '*'
             return response
         out = {
@@ -596,7 +634,7 @@ def gw_update(request):
 
     if request.method != 'POST':
         pretty_json = json.dumps({ 'error': str(request.method) + ' call does not exist for this URI' }, indent=4)
-        response = HttpResponse(pretty_json, content_type="application/json",  status=400)
+        response = HttpResponse(pretty_json, content_type="application/json",  status = 400)
         response['Access-Control-Allow-Origin'] = '*'
         return response
 
