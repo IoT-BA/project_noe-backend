@@ -10,6 +10,10 @@ def generate_api_key():
     api_key = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(32))
     return str(api_key)
 
+def generate_gw_serial():
+    serial = ''.join("{:02x}".format(ord(c)) for c in ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(8)))
+    return str(serial)
+
 class Gateway(models.Model):
     def __unicode__(self):
          return str(self.id) + " - " + str(self.description)
@@ -18,7 +22,7 @@ class Gateway(models.Model):
     location = models.CharField(max_length=512, default="", blank=True)
     gps_lon = models.FloatField(default=0.0, blank=True)
     gps_lat = models.FloatField(default=0.0, blank=True)
-    serial = models.CharField(max_length=128, default=generate_api_key, blank=True)
+    serial = models.CharField(max_length=16, default=generate_gw_serial, blank=True)
     mac = models.CharField(max_length=64, null=True, blank=True)
     lorawan_band = models.IntegerField(choices=((0, 'EU863-870'), (1, 'US902-928'), (2, 'CN779-787'), (3, 'EU433')), null=True, blank=True)
     last_seen = models.DateTimeField(null=True, blank=True)

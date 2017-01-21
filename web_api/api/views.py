@@ -650,12 +650,13 @@ def gw_update(request):
         return JsonResponse(out, safe=False, status=status_code)
 
     try:
-        gw = Gateway.objects.get(mac = d['mac'])
+        gw = Gateway.objects.get(serial = d['mac'])
     except Exception as e:
         print("Error: " + str(e))
         print("Creating new Gateway with MAC " + d['mac'])
         gw = Gateway(
                      mac = d['mac'],
+                     serial = d['mac'],
                      owner = User.objects.get(username = 'unclaimed')
                     )
 
@@ -694,7 +695,7 @@ def save_rawpoint(request):
             point.payload = d['payload']
 
             try:
-                point.gw = Gateway.objects.get(mac = d['gw_mac']) 
+                point.gw = Gateway.objects.get(serial = d['gw_mac']) 
             except Exception as e:
                 pass
 
