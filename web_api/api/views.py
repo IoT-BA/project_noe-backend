@@ -562,8 +562,9 @@ def gw_info(request, gw_serial):
                        'username': gw.owner.username,
                      }, 
             'mqtt': {
-                      'user':     gw.serial,
-                      'password': gw.serial[::-1],
+                      'user': str(gw.serial),
+                      'password': str(gw.serial)[::-1],
+                      'topic': 'gateway/' + str(gw.serial) + '/#',
                     }, 
             'last_seen': str(gw.last_seen),
         }
