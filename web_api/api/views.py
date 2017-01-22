@@ -260,6 +260,7 @@ def nodes(request):
             'api_key': node.api_key,
             'owner': node.owner.username,
             'node_id': node.node_id,
+            'last_rawpoint': str(node.last_rawpoint),
         }
 
         if node.lorawan_application:
@@ -286,12 +287,17 @@ def gws_list(request):
             'description': gw.description,
             'serial': gw.serial,
             'mac': gw.mac,
-            'lorawan_band': str(gw.lorawan_band),
+            'lorawan_band': gw.get_lorawan_band_display(),
             'owner': gw.owner.username,
             'last_seen': str(gw.last_seen),
             'gps_lon': gw.gps_lon,
             'gps_lat': gw.gps_lat,
+            'mqtt': {
+                      'user': str(gw.serial),
+                      'password': str(gw.mqtt_password)
+                    },
         })
+        gw = None
 
     pretty_json = json.dumps(out, indent=4)
     response = HttpResponse(pretty_json, content_type="application/json")
@@ -563,7 +569,7 @@ def gw_info(request, gw_serial):
                      }, 
             'mqtt': {
                       'user': str(gw.serial),
-                      'password': str(gw.serial)[::-1],
+                      'password': str(gw.mqtt_password),
                       'topic': 'gateway/' + str(gw.serial) + '/#',
                     }, 
             'last_seen': str(gw.last_seen),
