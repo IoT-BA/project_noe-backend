@@ -11,6 +11,7 @@ from api.models import Rawpoint
 from api.models import Profile 
 from api.models import LoRaWANRawPoint 
 from api.models import LoRaWANApplication 
+from api.models import ABP 
 
 class ProfileInline(admin.StackedInline):
     model = Profile
@@ -52,3 +53,4 @@ admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
 admin.site.register(LoRaWANRawPoint, LoRaWANRawPointAdmin)
 admin.site.register(LoRaWANApplication)
+admin.site.register(ABP)

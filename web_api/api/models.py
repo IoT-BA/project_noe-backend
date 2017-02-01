@@ -20,7 +20,7 @@ def generate_gw_serial():
 
 class Gateway(models.Model):
     def __unicode__(self):
-         return str(self.id) + " - " + str(self.description)
+         return str(self.id) + " - " + str(self.serial)
     description = models.TextField(null=True, blank=True)
     owner = models.ForeignKey(User)
     location = models.CharField(max_length=512, default="", blank=True)
@@ -70,6 +70,14 @@ class Node(models.Model):
     gps_lat = models.FloatField(default=0.0)
     last_rawpoint = models.DateTimeField(null=True, blank=True)
     lorawan_application = models.ForeignKey(LoRaWANApplication, null=True, blank=True)
+
+class ABP(models.Model):
+    def __unicode__(self):
+         return self.DevAddr
+    node = models.ForeignKey(Node)
+    DevAddr = models.CharField(max_length=8, null=True, blank=True)
+    NwkSKey = models.CharField(max_length=32, null=True, blank=True)
+    AppSKey = models.CharField(max_length=32, null=True, blank=True)
 
 class Rawpoint(models.Model):
     def __unicode__(self):

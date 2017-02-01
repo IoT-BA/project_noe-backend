@@ -159,6 +159,68 @@ def rawpoints_this_node(request, node_api_key):
                 sequenced_points = sequenced_points + 1
             out['dataset'].append({
                 'payload': p.payload,
+                'gateway': p.gateway_serial,
+                'seq_number': p.seq_number,
+                'datetime': str(p.timestamp),
+                'timestamp': (p.timestamp.replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds(),
+            })
+
+        delta_sequence = seq_number_max - seq_number_min
+        out['info']['loss_rate_percent'] = round(100 - (100.0 / float(delta_sequence) * float(sequenced_points)), 1)
+
+        out['info']['seq_delta'] = delta_sequence 
+        out['info']['sequenced_points'] = sequenced_points
+        out['info']['seq_number_min'] = seq_number_min
+        out['info']['seq_number_max'] = seq_number_max
+
+        if request.GET.get('format') == 'csv':
+            response = HttpResponse(content_type='text/plain')
+            writer = csv.writer(response)
+            for p in p_list:
+                writer.writerow([ p.timestamp, p.key.numeric, p.value ])
+            return response
+        else:
+            pretty_json = json.dumps(out, indent=4)
+            return HttpResponse(pretty_json, content_type="application/json")
+
+def rawpoints_this_node_id(request, node_id):
+    if request.method == 'GET':
+        if not request.GET.get('limit'):
+            limit = 100
+        else:
+            limit = request.GET.get('limit')
+        node = Node.objects.get(node_id = node_id)
+        p_list = Rawpoint.objects.filter(node = node).order_by('-timestamp').distinct()[:limit]
+        out = {
+            'dataset': [],
+            'node': {
+                'backend_id': node.id,
+                'node_id':    node.node_id,
+                'name':       node.name,
+                'owner':      node.owner.username,
+                'nodetype':   node.nodetype.name,
+                'api_key':    node.api_key,
+            },
+            'info': {
+                'api_request_timestamp': str(timezone.now()),
+                'dataset_size_limit': limit,
+                'dataset_size': len(p_list),
+            },
+        }
+
+        seq_number_min = 999999999;
+        seq_number_max = 0;
+        sequenced_points = 0
+
+        for p in p_list:
+            if not (p.seq_number is None):
+                if p.seq_number < seq_number_min:
+                    seq_number_min = p.seq_number
+                if p.seq_number > seq_number_max:
+                    seq_number_max = p.seq_number
+                sequenced_points = sequenced_points + 1
+            out['dataset'].append({
+                'payload': p.payload,
                 'gateway_serial': p.gateway_serial,
                 'seq_number': p.seq_number,
                 'datetime': str(p.timestamp),
@@ -581,27 +643,32 @@ def gw_info(request, gw_serial):
     return response
 
 def node_info(request, node_api_key):
-    if request.method == 'GET':
-        n = Node.objects.get(api_key = node_api_key)
-        out = {
-            'serial': n.id,
-            'node_id': n.node_id,
-            'name': n.name,
-            'location': n.location,
-            'description': n.description,
-            'owner': n.owner.username,
-            'api_key': n.api_key,
-            'nodetype': n.nodetype.name,
-            'gps_lon': n.gps_lon,
-            'gps_lat': n.gps_lat,
-            'last_rawpoint': str(n.last_rawpoint),
-            'keys': [],
-            'key_numeric': {},
-        }
+    if request.method != 'GET':
+        pretty_json = json.dumps({ 'error': str(request.method) + ' call does not exist for this URI' }, indent=4)
+        response = HttpResponse(pretty_json, content_type="application/json",  status = 400)
+        response['Access-Control-Allow-Origin'] = '*'
+        return response
 
-        for key in n.nodetype.keys.all():
-            out['keys'].append( { 'numeric': key.numeric, 'name': key.key, 'unit': key.unit } )
-            out['key_numeric'][str(key.numeric)] = { 'numeric': key.numeric, 'name': key.key, 'unit': key.unit }
+    n = Node.objects.get(api_key = node_api_key)
+    out = {
+        'serial': n.id,
+        'node_id': n.node_id,
+        'name': n.name,
+        'location': n.location,
+        'description': n.description,
+        'owner': n.owner.username,
+        'api_key': n.api_key,
+        'nodetype': n.nodetype.name,
+        'gps_lon': n.gps_lon,
+        'gps_lat': n.gps_lat,
+        'last_rawpoint': str(n.last_rawpoint),
+        'keys': [],
+        'key_numeric': {},
+    }
+
+    for key in n.nodetype.keys.all():
+        out['keys'].append( { 'numeric': key.numeric, 'name': key.key, 'unit': key.unit } )
+        out['key_numeric'][str(key.numeric)] = { 'numeric': key.numeric, 'name': key.key, 'unit': key.unit }
 
     pretty_json = json.dumps(out, indent=4)
     response = HttpResponse(pretty_json, content_type="application/json")
