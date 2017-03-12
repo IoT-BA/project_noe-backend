@@ -11,6 +11,8 @@ import dateutil.parser
 from pprint import pprint
 from datetime import datetime
 
+# parses RawPoint to Point and inserts the data to Django using REST API call
+
 def insert_into_django(post_payload):
     print("Sending this to Django:")
     pprint(post_payload)

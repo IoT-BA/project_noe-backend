@@ -676,32 +676,50 @@ def node_info(request, node_api_key):
     return response
 
 def rawpoints(request):
-    if request.method == 'GET':
-        if not request.GET.get('limit'):
-            limit = 200
-        else:
-            limit = request.GET.get('limit')
+
+    if request.method != 'GET':
+        pretty_json = json.dumps({ 'error': str(request.method) + ' call does not exist for this URI' }, indent=4)
+        response = HttpResponse(pretty_json, content_type="application/json",  status = 400)
+        response['Access-Control-Allow-Origin'] = '*'
+        return response
+
+    out = {
+            'dataset': [],
+            'filters': [],
+          }
+
+    if not request.GET.get('limit'):
+        limit = 200
+    else:
+        limit = int(request.GET.get('limit'))
+    out['dataset_size_limited_to'] = limit
+
+    if request.GET.get('state'):
+        # get only rawpoints in a specific state (new...)
+        out['filters'].append('state = ' + str(request.GET.get('state')))
+        p_list = Rawpoint.objects.filter(state = request.GET.get('state')).order_by('-timestamp')[:limit]
+    else:
+        out['filters'].append('all')
         p_list = Rawpoint.objects.all().order_by('-timestamp')[:limit]
-        if request.GET.get('format') == 'csv':
-            response = HttpResponse(content_type='text/plain')
-            writer = csv.writer(response)
-            for p in p_list:
-                writer.writerow([ p.gw.description, p.timestamp, p.payload, p.rssi ])
-            return response
-        else:
-            out = { 'dataset': [] }
-            for p in p_list:
-                out['dataset'].append({
-                                          'rawpoint_id': str(p.id),
-                                          'payload':     str(p.payload),
-                                          'datetime':    str(p.timestamp),
-                                          'node': {
-                                              'api_key':  str(p.node.api_key),
-                                              'nodetype': str(p.node.nodetype.name),
-                                          },
-                                     })
-            pretty_json = json.dumps(out, indent=4)
-            return HttpResponse(pretty_json, content_type="application/json")
+
+    for p in p_list:
+        keys = []
+        for key in p.node.nodetype.keys.all():
+            keys.append( { 'numeric': key.numeric, 'name': key.key, 'unit': key.unit } )
+
+        out['dataset'].append({
+                                'rawpoint_id': int(p.id),
+                                'payload':     str(p.payload),
+                                'datetime':    str(p.timestamp),
+                                'state':       int(p.state),
+                                'node': {
+                                    'api_key':  str(p.node.api_key),
+                                    'nodetype': str(p.node.nodetype.name),
+                                    'keys':     keys,
+                                },
+                             })
+    pretty_json = json.dumps(out, indent=4)
+    return HttpResponse(pretty_json, content_type="application/json")
 
 @csrf_exempt
 def gw_update(request):
