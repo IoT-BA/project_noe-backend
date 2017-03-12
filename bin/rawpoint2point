@@ -16,9 +16,10 @@ def insert_into_django(point):
     pprint(point)
     r = requests.post('http://lorawan.sk:8000/api/points/save/', data = json.dumps(point))
     pprint(r.content)
+    pprint(r.status_code)
     return
 
-r = requests.get('http://lorawan.sk:8000/api/rawpoints/?limit=50&state=0')
+r = requests.get('http://lorawan.sk:8000/api/rawpoints/?limit=500&state=0')
 
 out = {
         'points': [],
@@ -28,6 +29,7 @@ for rawpoint in r.json()['dataset']:
     node = rawpoint['node']
     for key in rawpoint['node']['keys']:
         if node['nodetype'] == "SCORIA_ATMEGA328 rev2 DS18B20 + PT100":
+            pprint(rawpoint)
             try:
                 # temperature
                 if key['numeric'] == 67:
@@ -44,10 +46,15 @@ for rawpoint in r.json()['dataset']:
                 print(str(e))
                 continue
             out['points'].append({
+                                   'node_id': node['node_id'],
                                    'key': key['numeric'],
                                    'value': value,
+                                   'gw_mac': rawpoint['gw_mac'],
+                                   'rssi': rawpoint['rssi'],
+                                   'snr': rawpoint['snr'],
+                                   'timestamp': rawpoint['datetime'],
                                    'rawpoint_id': rawpoint['rawpoint_id'],
                                  })
 pprint(out)
 for point in out['points']:
-    insert_into_django([point])
+    insert_into_django(point)

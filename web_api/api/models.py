@@ -20,7 +20,7 @@ def generate_gw_serial():
 
 class Gateway(models.Model):
     def __unicode__(self):
-         return str(self.id) + " - " + str(self.serial)
+         return str(self.mac) + "-" + str(self.serial)
     description = models.TextField(null=True, blank=True)
     owner = models.ForeignKey(User)
     location = models.CharField(max_length=512, default="", blank=True)
@@ -28,7 +28,7 @@ class Gateway(models.Model):
     gps_lat = models.FloatField(default=0.0, blank=True)
     serial = models.CharField(max_length=16, default=generate_gw_serial, blank=True)
     mqtt_password = models.CharField(max_length=16, default=generate_mqtt_password, blank=True, null=True)
-    mac = models.CharField(max_length=64, null=True, blank=True)
+    mac = models.CharField(max_length=64, null=False, blank=False, unique=True)
     lorawan_band = models.IntegerField(choices=((0, 'EU863-870'), (1, 'US902-928'), (2, 'CN779-787'), (3, 'EU433')), null=True, blank=True)
     last_seen = models.DateTimeField(null=True, blank=True)
     last_seen_ip = models.CharField(max_length=200, blank=True, null=True)
@@ -56,7 +56,7 @@ class LoRaWANApplication(models.Model):
 
 class Node(models.Model):
     def __unicode__(self):
-         return str(self.node_id) + " - " + str(self.api_key)
+         return str(self.node_id) + "-" + str(self.api_key)
     id = models.AutoField(primary_key = True)
     node_id = models.CharField(max_length=255, null=True, unique=True)
     api_key = models.CharField(max_length=20, null=False, blank=False, unique=True, default=generate_api_key)
@@ -126,14 +126,16 @@ class Point(models.Model):
     id = models.IntegerField(primary_key = True)
     key = models.ForeignKey(Key, db_column = '_key', db_constraint=False, null=False, blank=False)
     node = models.ForeignKey(Node, db_column = 'serial', db_constraint=False, null=True, blank=True)
-    value = models.IntegerField()
-    rssi = models.IntegerField(null=True, blank=True)
+    value = models.FloatField()
+    rssi = models.FloatField(null=True, blank=True)
+    snr = models.FloatField(null=True, blank=True)
     timestamp = models.DateTimeField(null=True, blank=True)
     gw = models.ForeignKey(Gateway, db_constraint=False, null=True, blank=True)
     rawpoint = models.ForeignKey(Rawpoint, db_constraint=False, null=True, blank=True)
     raw_packet = models.CharField(max_length=256, null=True, blank=True)
     class Meta:
         db_table = 'parsed_data'
+        unique_together = (("key", "node", "timestamp", "gw"))
 
 class Profile(models.Model):
     def __unicode__(self):

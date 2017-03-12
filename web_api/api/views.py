@@ -18,6 +18,7 @@ from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 import dateutil.parser
 from pprint import pprint
+import sys
 
 def index(request):
     return HttpResponse("Not much to see here mate!")
@@ -52,9 +53,10 @@ def points_this_node(request, node_api_key):
         node = Node.objects.get(api_key = node_api_key)
         p_list = Point.objects.filter(node = node).order_by('-timestamp')[:200]
         out = {
+            'dataset_limit': 'last 200 by timestamp',
             'dataset': [],
             'node': {
-                'serial': node.id,
+                'api_key': node.api_key,
                 'name': node.name,
                 'owner': node.owner.username,
             }
@@ -285,19 +287,23 @@ def points_this_node_key(request, node_api_key, key_numeric):
             limit = 1000
         else:
             limit = request.GET.get('limit')
+
         key = Key.objects.get(numeric=key_numeric)
         node = Node.objects.get(api_key = node_api_key)
+
         p_list = Point.objects.filter(node = node, key = key).order_by('-timestamp')[:limit]
         out = {
             'dataset': [],
+            'dataset_limit': 'last ' + str(limit) + ' by timestamp',
             'node_serial': node.id,
-            'key': key.numeric,
+            'key': {
+                     'numeric': key.numeric,
+                   }
         }
         for point in p_list:
             out['dataset'].append({
                 'value': point.value,
                 'timestamp': str(point.timestamp),
-                'rssi': point.rssi
             })
         if request.GET.get('format') == 'csv':
             response = HttpResponse(content_type='text/plain')
@@ -308,7 +314,8 @@ def points_this_node_key(request, node_api_key, key_numeric):
                 i = i + 1
             return response
         else:
-            return JsonResponse(out, safe=False)
+            pretty_json = json.dumps(out, indent=4)
+            return HttpResponse(pretty_json, content_type="application/json")
 
 def nodes(request):
     ''' List of all Nodes '''
@@ -566,7 +573,7 @@ def points_all_nodes(request):
             'value': p.value,
             'timestamp': str(p.timestamp),
             'node': {
-                'serial': p.node.id,
+                'api_key': p.node.api_key,
                 'owner': p.node.owner.username,
             }
         })
@@ -721,7 +728,11 @@ def rawpoints(request):
                                 'payload':     str(p.payload),
                                 'datetime':    str(p.timestamp),
                                 'state':       int(p.state),
+                                'rssi':        float(p.rssi),
+                                'snr':         float(p.snr),
+                                'gw_mac':      p.gateway_serial,
                                 'node': {
+                                    'node_id':  str(p.node.node_id),
                                     'api_key':  str(p.node.api_key),
                                     'nodetype': str(p.node.nodetype.name),
                                     'keys':     keys,
@@ -868,27 +879,43 @@ def save_point(request):
 
     out = []
 
-    data = json.loads(request.body)
-    for d in data:
-        print("Saving Point from following source data:")
-        pprint(d)
-        try: 
-            point = Point()
-            point.rawpoint = Rawpoint.objects.get(id = d['rawpoint_id'])
-            point.key = Key.objects.get(numeric = d['key'])
-            point.value = d['value']
-            point.rssi = 0
-            point.save()
-            out.append({
-                         'status': 1,
-                         'status_explain': 'OK',
-                      })
+    d = json.loads(request.body)
+
+    status_code = 200
+
+    try: 
+        point = Point()
+        point.rawpoint = Rawpoint.objects.get(id = d['rawpoint_id'])
+        point.key = Key.objects.get(numeric = d['key'])
+        point.node = Node.objects.get(node_id = d['node_id'])
+        point.value = d['value']
+        point.rssi = d['rssi']
+        point.snr = d['snr'] 
+        point.timestamp = dateutil.parser.parse(d['timestamp'])
+        try:
+            point.gw = Gateway.objects.get(mac = d['gw_mac']) 
         except Exception as e:
-            out.append({
-                         'status': 2,
-                         'status_explain': str(e),
-                      })
-    return JsonResponse(out, safe=False)
+            print("Error: " + str(e))
+            print("Creating new Gateway with MAC " + d['gw_mac'])
+            gw = Gateway(
+                          mac = d['gw_mac'],
+                          owner = User.objects.get( username = 'unclaimed' ),
+                        )
+            gw.save()
+            point.gw = gw
+        point.save()
+        out.append({
+                     'status': 1,
+                     'status_explain': 'OK',
+                  })
+    except Exception as e:
+        out.append({
+                     'status': 2,
+                     'status_explain': str(sys.exc_info()[2].tb_lineno) + ": " + str(e),
+                  })
+        status_code = 400
+        
+    return JsonResponse(out, safe=False, status = status_code)
 
 @csrf_exempt
 def save_lorawanrawpoint(request):
