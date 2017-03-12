@@ -32,7 +32,7 @@ class LoRaWANRawPointAdmin(admin.ModelAdmin):
     list_filter = ('DevAddr', 'datr', 'chan')
 
 class PointAdmin(admin.ModelAdmin):
-    list_display = ('id', 'timestamp', 'node_id', 'key', 'value', 'rssi', 'gw')
+    list_display = ('id', 'rawpoint_id', 'key', 'value', 'timestamp', 'node_id', 'gw')
     list_filter = ('gw', 'node_id', 'key') 
     search_fields = ('gw__description', 'node__name')
     raw_id_fields = ('rawpoint', )

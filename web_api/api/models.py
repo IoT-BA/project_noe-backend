@@ -124,11 +124,11 @@ class Point(models.Model):
     def __unicode__(self):
          return str(self.id)
     id = models.IntegerField(primary_key = True)
-    key = models.ForeignKey(Key, db_column = '_key', db_constraint=False, null=True, blank=True)
+    key = models.ForeignKey(Key, db_column = '_key', db_constraint=False, null=False, blank=False)
     node = models.ForeignKey(Node, db_column = 'serial', db_constraint=False, null=True, blank=True)
     value = models.IntegerField()
     rssi = models.IntegerField(null=True, blank=True)
-    timestamp = models.DateTimeField()
+    timestamp = models.DateTimeField(null=True, blank=True)
     gw = models.ForeignKey(Gateway, db_constraint=False, null=True, blank=True)
     rawpoint = models.ForeignKey(Rawpoint, db_constraint=False, null=True, blank=True)
     raw_packet = models.CharField(max_length=256, null=True, blank=True)

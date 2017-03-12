@@ -551,20 +551,29 @@ def gis(request):
     return response
 
 def points_all_nodes(request):
-    if request.method == 'GET':
-        p_list = Point.objects.all().order_by('-timestamp')[:1000]
-        out = []
-        for p in p_list:
-            out.append({
-                'value': p.value,
-                'timestamp': str(p.timestamp),
-                'key': p.key.numeric,
-                'node': {
-                    'serial': p.node.id,
-                    'owner': p.node.owner.username,
-                }
-            })
-        return JsonResponse(out, safe=False)
+    if request.method != 'GET':
+        pretty_json = json.dumps({ 'error': 'POST call does not exist for this URI - try GET request' }, indent=4)
+        response = HttpResponse(pretty_json, content_type="application/json",  status = 400)
+        response['Access-Control-Allow-Origin'] = '*'
+        return response
+
+    p_list = Point.objects.all().order_by('-timestamp')[:1000]
+    out = []
+    for p in p_list:
+        out.append({
+            'point_id': p.id,
+            'key': p.key.numeric,
+            'value': p.value,
+            'timestamp': str(p.timestamp),
+            'node': {
+                'serial': p.node.id,
+                'owner': p.node.owner.username,
+            }
+        })
+    pretty_json = json.dumps(out, indent=4)
+    response = HttpResponse(pretty_json, content_type="application/json")
+    response['Access-Control-Allow-Origin'] = '*'
+    return response
 
 def points_all_nodes_key(request, key_numeric):
     if request.method == 'GET':
@@ -851,29 +860,35 @@ def save_rawpoint(request):
 def save_point(request):
     from datetime import datetime 
 
+    if request.method != 'POST':
+        pretty_json = json.dumps({ 'error': 'GET call does not exist for this URI - try GET request' }, indent=4)
+        response = HttpResponse(pretty_json, content_type="application/json",  status = 400)
+        response['Access-Control-Allow-Origin'] = '*'
+        return response
+
     out = []
 
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        for d in data:
-            print("Saving Point from following source data:")
-            pprint(d)
-            try: 
-                point = Point()
-                point.node = Node.objects.get(api_key = d['node_api_key'])
-                point.rawpoint = Rawpoint.objects.get(id = d['rawpoint_id'])
-                point.key = Key.objects.get(numeric = d['key'])
-                point.value = d['value']
-                point.rssi = 0
-                point.timestamp = dateutil.parser.parse(d['datetime'])
-                point.save()
-                out.append({ 'rowid': d['rowid'], 'status': 1 })
-            except Exception as e:
-                out.append({ 'rowid': d['rowid'],
-                             'status': 2,
-                             'status_explain': str(e)
-                          })
-        return JsonResponse(out, safe=False)
+    data = json.loads(request.body)
+    for d in data:
+        print("Saving Point from following source data:")
+        pprint(d)
+        try: 
+            point = Point()
+            point.rawpoint = Rawpoint.objects.get(id = d['rawpoint_id'])
+            point.key = Key.objects.get(numeric = d['key'])
+            point.value = d['value']
+            point.rssi = 0
+            point.save()
+            out.append({
+                         'status': 1,
+                         'status_explain': 'OK',
+                      })
+        except Exception as e:
+            out.append({
+                         'status': 2,
+                         'status_explain': str(e),
+                      })
+    return JsonResponse(out, safe=False)
 
 @csrf_exempt
 def save_lorawanrawpoint(request):
