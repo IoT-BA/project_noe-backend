@@ -131,13 +131,16 @@ def rawpoints_this_node(request, node_api_key):
         else:
             limit = request.GET.get('limit')
         node = Node.objects.get(api_key = node_api_key)
+
         p_list = Rawpoint.objects.filter(node = node).order_by('-timestamp').distinct()[:limit]
+
         out = {
             'dataset': [],
             'node': {
                 'backend_id': node.id,
                 'node_id':    node.node_id,
                 'name':       node.name,
+                'api_key':    node.api_key,
                 'owner':      node.owner.username,
                 'nodetype':   node.nodetype.name,
             },
@@ -160,11 +163,13 @@ def rawpoints_this_node(request, node_api_key):
                     seq_number_max = p.seq_number
                 sequenced_points = sequenced_points + 1
             out['dataset'].append({
-                'payload': p.payload,
-                'gateway': p.gateway_serial,
+                'payload':    p.payload,
+                'gateway':    p.gateway_serial,
                 'seq_number': p.seq_number,
-                'datetime': str(p.timestamp),
-                'timestamp': (p.timestamp.replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds(),
+                'rssi':       p.rssi,
+                'snr':        p.snr,
+                'datetime':   str(p.timestamp),
+                'timestamp':  (p.timestamp.replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds(),
             })
 
         delta_sequence = seq_number_max - seq_number_min
