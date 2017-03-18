@@ -65,7 +65,7 @@ def points_this_node(request, node_api_key):
             try:
                 out['dataset'].append({
                     'value': p.value,
-                    'timestamp': str(p.timestamp),
+                    'timestamp': p.timestamp.isoformat(),
                     'key_numeric': p.key.numeric,
                     'key_description': p.key.key,
                     'key_unit': p.key.unit,
@@ -111,7 +111,7 @@ def rawpoints_this_gw(request, gw_serial):
             for raw in Rawpoint.objects.filter(gw = gw).order_by('-timestamp')[:limit]:
                 out['dataset'].append({
                                         'payload': str(raw.payload),
-                                        'timestamp': str(raw.timestamp),
+                                        'timestamp': raw.timestamp.isoformat(),
                                         'node': {
                                                   'id': str(raw.node.node_id),
                                                   'api_key': str(raw.node.node_id),
@@ -168,7 +168,7 @@ def rawpoints_this_node(request, node_api_key):
                 'seq_number': p.seq_number,
                 'rssi':       p.rssi,
                 'snr':        p.snr,
-                'datetime':   str(p.timestamp),
+                'datetime':   p.timestamp.isoformat(),
                 'timestamp':  (p.timestamp.replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds(),
             })
 
@@ -230,7 +230,7 @@ def rawpoints_this_node_id(request, node_id):
                 'payload': p.payload,
                 'gateway_serial': p.gateway_serial,
                 'seq_number': p.seq_number,
-                'datetime': str(p.timestamp),
+                'datetime': p.timestamp.isoformat(),
                 'timestamp': (p.timestamp.replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds(),
             })
 
@@ -277,7 +277,7 @@ def rssi_this_node(request, node_api_key):
         }
         for p in p_list:
             out['dataset'].append({
-                'datetime': str(p.timestamp),
+                'datetime': p.timestamp.isoformat(),
                 'timestamp': int((p.timestamp.replace(tzinfo=None) - datetime(1970, 1, 1)).total_seconds()),
                 'rssi': p.rssi,
                 'snr': p.snr,
@@ -308,7 +308,7 @@ def points_this_node_key(request, node_api_key, key_numeric):
         for point in p_list:
             out['dataset'].append({
                 'value': point.value,
-                'timestamp': str(point.timestamp),
+                'timestamp': point.timestamp.isoformat(),
             })
         if request.GET.get('format') == 'csv':
             response = HttpResponse(content_type='text/plain')
@@ -576,7 +576,7 @@ def points_all_nodes(request):
             'point_id': p.id,
             'key': p.key.numeric,
             'value': p.value,
-            'timestamp': str(p.timestamp),
+            'timestamp': p.timestamp.isoformat(),
             'node': {
                 'api_key': p.node.api_key,
                 'owner': p.node.owner.username,
@@ -595,7 +595,7 @@ def points_all_nodes_key(request, key_numeric):
         for p in p_list:
             out.append({
                 'value': p.value,
-                'timestamp': str(p.timestamp),
+                'timestamp': p.timestamp.isoformat(),
                 'key': p.key.numeric,
                 'node': {
                     'serial': p.node.id,
@@ -731,7 +731,7 @@ def rawpoints(request):
         out['dataset'].append({
                                 'rawpoint_id': int(p.id),
                                 'payload':     str(p.payload),
-                                'datetime':    str(p.timestamp),
+                                'datetime':    p.timestamp.isoformat(),
                                 'state':       int(p.state),
                                 'rssi':        float(p.rssi),
                                 'snr':         float(p.snr),
