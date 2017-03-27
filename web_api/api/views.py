@@ -15,7 +15,7 @@ from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import dateutil.parser
 from pprint import pprint
 import sys
@@ -132,7 +132,17 @@ def rawpoints_this_node(request, node_api_key):
             limit = request.GET.get('limit')
         node = Node.objects.get(api_key = node_api_key)
 
-        p_list = Rawpoint.objects.filter(node = node).order_by('-timestamp').distinct()[:limit]
+        if not request.GET.get('from_timestamp'):
+            from_timestamp = datetime.now() - timedelta(days = 100)
+        else:
+            from_timestamp = datetime.fromtimestamp(float(request.GET.get('from_timestamp')), pytz.utc)
+
+        if not request.GET.get('to_timestamp'):
+            to_timestamp = datetime.now()
+        else:
+            to_timestamp = datetime.fromtimestamp(float(request.GET.get('to_timestamp')), pytz.utc)
+
+        p_list = Rawpoint.objects.filter(node = node, timestamp__gte = from_timestamp, timestamp__lte = to_timestamp).order_by('-timestamp')[:limit]
 
         out = {
             'dataset': [],
@@ -145,6 +155,8 @@ def rawpoints_this_node(request, node_api_key):
                 'nodetype':   node.nodetype.name,
             },
             'info': {
+                'from_timestamp': str(from_timestamp),
+                'to_timestamp': str(to_timestamp),
                 'api_request_timestamp': str(timezone.now()),
                 'dataset_size_limit': limit,
                 'dataset_size': len(p_list),
